@@ -1,0 +1,20 @@
+// ::ng-deep{
+//     div.mat-mdc-form-field-subscript-wrapper{
+//         display: none !important;
+//     }
+// }
+
+.btn{
+    background-color:var(--primary-color);
+    color: var(--general-btn-text-color);
+    border: solid transparent 1px;
+    border-radius: 20px;
+    padding: 10px;
+    cursor: pointer;
+}
+
+.btn:hover{
+    background-color: var(--general-btn-hover-bg);
+    color: var(--primary-color);
+    border: solid var(--primary-color) 1px;
+}
