@@ -2,8 +2,8 @@ import {
   LOCALE_ID,
   NgModule,
 } from '@angular/core';
-import { MainComponent } from './components/main/main.component';
 import { CommonModule } from '@angular/common';
+import { MainComponent } from './components/main/main.component';
 import { TextInputComponent } from './components/text-input/text-input.component';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { MatCardModule } from '@angular/material/card';
