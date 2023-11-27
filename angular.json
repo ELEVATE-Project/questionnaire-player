@@ -31,11 +31,11 @@
             ],
             "styles": [
               "projects/questionnaire-app/src/styles.scss",
-              "node_modules/@Elevate/questionnaire-webcomponent/styles.scss"
+              "node_modules/questionnaire-webcomponent/styles.scss"
 
             ],
             "scripts": [
-              "node_modules/@Elevate/questionnaire-webcomponent/questionnaire-player-webcomponent.js"
+              "node_modules/questionnaire-webcomponent/questionnaire-player-webcomponent.js"
             ]
           },
           "configurations": {
