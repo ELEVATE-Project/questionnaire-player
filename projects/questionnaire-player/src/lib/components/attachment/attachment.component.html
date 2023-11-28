@@ -24,7 +24,7 @@
 <div
   style="display: flex; flex-direction: row; gap: 20px; color: var(--primary-color)"
 >
-  <ng-container *ngFor="let file of data?.files; let i = index">
+  <ng-container *ngFor="let file of data?.files; let i = index; trackBy:filesTrackBy">
     <ng-container [ngSwitch]="getFileType(file.name)">
       <div *ngSwitchCase="'image'" class="iconList">
         <mat-icon
