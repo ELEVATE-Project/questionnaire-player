@@ -18,10 +18,15 @@
 
 .responsive-margin{
   margin: 20px !important;
+  border-radius: 10px;
 }
 
 @media screen and (max-width:768px) {
   .responsive-margin{
     margin: 20px 0 !important;
   }
+}
+.question-tip{
+  font-size: smaller; 
+  color: var(--question-tip)
 }

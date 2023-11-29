@@ -28,21 +28,17 @@
       activeCard: question.responseType != 'pageQuestions'
     }"
     class="responsive-margin"
-    style="border-radius: 10px"
     *ngIf="!question.visibleIf?.length || question.canDisplay == true"
   >
     <div [ngClass]="{ content: question.responseType != 'pageQuestions' }">
       <div>
-        <div
-          *ngFor="let q of question.question; let qai = index"
-          style="margin-bottom: 20px"
-        >
-          <div *ngIf="q != ''" style="color: var(--primary-color)">
+        <div *ngFor="let q of question.question; let qai = index" class="mb-20">
+          <div *ngIf="q != ''" class="wc-primary-color">
             {{ question.questionNumber + " . " }}&nbsp;{{ q }}
             <button
               *ngIf="question?.hint"
               mat-icon-button
-              style="color: var(--primary-color)"
+              class="wc-primary-color"
               aria-label="Icon-button with a lightbulb icon"
               matTooltip="Hint about the question"
               (click)="openDialog(question.hint)"
@@ -52,7 +48,7 @@
               >
             </button>
             <mat-divider
-              style="margin-top: 10px"
+              class="mt-10"
               [ngStyle]="{
                 'background-color':
                   question.responseType != 'pageQuestions'
@@ -65,18 +61,11 @@
         </div>
       </div>
       <ng-container *ngIf="question?.tip">
-        <p style="font-size: smaller; color: var(--question-tip)">
+        <p class="question-tip">
           {{ question?.tip }}
         </p>
       </ng-container>
-      <div
-        style="
-          margin-bottom: 10px;
-          display: flex;
-          flex-direction: column;
-          gap: 10px;
-        "
-      >
+      <div class="mb-10 d-flex flex-dc flex-gap-10">
         <lib-text-input
           *ngIf="question.responseType == reponseType.TEXT"
           [questionnaireForm]="questionnaireForm"
@@ -149,12 +138,13 @@
           }"
           [questionId]="question._id + qi"
           [fileUploadResponse]="
-            fileUploadResponse?.question_id == (question._id + qi) &&
+            fileUploadResponse?.question_id == question._id + qi &&
             fileUploadResponse
           "
         >
         </lib-attachment>
-        <lib-dialog #dialogCmp
+        <lib-dialog
+          #dialogCmp
           [isDimmed]="isDimmed"
           [hint]="question?.hint"
           (closeHintEmitter)="closeHint()"

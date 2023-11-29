@@ -30,3 +30,9 @@
     padding: 10px;
     cursor: pointer;
 }
+
+.instance-card{
+    padding: 10px; 
+    margin-top: 10px;
+    border-radius: 10px
+}
