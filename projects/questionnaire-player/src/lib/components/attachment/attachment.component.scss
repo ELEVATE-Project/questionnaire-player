@@ -1,0 +1,57 @@
+input[type="file"] {
+  display: none;
+}
+
+label {
+  cursor: pointer;
+}
+
+.btn {
+  background-color: var(--secondary-btn-bg);
+  color:var(--primary-color);
+  border: solid var(--primary-color) 1px;
+  border-radius: 8px;
+  padding: 5px 15px;
+  cursor: pointer;
+}
+
+.iconList {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex-direction: column-reverse;
+}
+
+.btn:hover {
+  background-color: var(--secondary-btn-hover-bg);
+}
+
+mat-icon.customizeIcon {
+  color: var(--primary-color);
+  height: unset !important;
+  width: unset !important;
+  font-size: 36px;
+  cursor: pointer;
+}
+
+.cancelIcon {
+  position: absolute;
+  cursor: pointer;
+  top: -10px;
+  right: -15px;
+  color: var(--error-color);
+}
+
+.close-btn{
+  color: rgb(150, 4, 4);
+  font-size: large;
+}
+::ng-deep {
+  @media screen and (max-width:768px) {
+
+    .mdc-dialog .mdc-dialog__content {
+      padding: 0 !important;
+    }
+  }
+}

@@ -1,0 +1,32 @@
+.custom-font{
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+.section-header-style {
+  font-size: large;
+  font-weight: bold;
+  margin-bottom: 0;
+  color: var(--primary-color) !important;
+}
+.activeCard {
+  background-color: var(--card-bg);
+  border-left: solid 10px transparent;
+  transition: border-left 0.5s ease;
+}
+.activeCard:hover {
+  border-left: solid 10px var(--primary-color);
+}
+
+.responsive-margin{
+  margin: 20px !important;
+  border-radius: 10px;
+}
+
+@media screen and (max-width:768px) {
+  .responsive-margin{
+    margin: 20px 0 !important;
+  }
+}
+.question-tip{
+  font-size: smaller; 
+  color: var(--question-tip)
+}

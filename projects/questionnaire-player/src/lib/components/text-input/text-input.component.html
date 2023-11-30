@@ -1,0 +1,15 @@
+<mat-form-field
+  style="width: 100%;"
+  [formGroup]="questionnaireForm"
+  *ngIf="questionnaireForm?.contains(question._id)"
+  appearance="outline"
+>
+  <textarea
+    class="text-area-sizing"
+    matInput
+    [formControlName]="question._id"
+    [placeholder]="placeholder"
+    (change)="onChange($event)"
+    [value]="question.value"
+  ></textarea>
+</mat-form-field>

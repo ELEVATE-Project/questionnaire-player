@@ -1,0 +1,26 @@
+{
+  "name": "@Elevate/questionnaire-webcomponent",
+  "version": "1.0.0",
+  "description": "The webcomponent for the questionnaire library",
+  "main": "questionnaire-player-webcomponent.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ELEVATE-Project/questionnaire-player.git"
+  },
+  "keywords": [
+    "shikshalokam",
+    "elevate",
+    "observation",
+    "survey",
+    "webcomponent",
+    "questionnaire",
+    "angular",
+    "library"
+  ],
+  "author": "Amoghavarsh",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ELEVATE-Project/questionnaire-player/issues"
+  },
+  "homepage": "https://github.com/ELEVATE-Project/questionnaire-player#readme"
+}
