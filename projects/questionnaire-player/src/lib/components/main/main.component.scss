@@ -1,0 +1,74 @@
+.custom-font {
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
+}
+
+.section-header-style {
+  font-size: large;
+  font-weight: bold;
+  margin-bottom: 0;
+  color: var(--primary-color) !important;
+}
+
+.activeCard {
+  background-color: var(--card-bg);
+  border-left: solid 10px transparent;
+  transition: border-left 0.5s ease;
+}
+
+.activeCard:hover {
+  border-left: solid 10px var(--primary-color);
+}
+
+.responsive-margin {
+  margin: 20px ;
+  border-radius: 10px;
+}
+
+@media screen and (max-width: 768px) {
+  .responsive-margin {
+    margin: 20px 0;
+  }
+}
+
+.question-tip {
+  font-size: smaller;
+  color: var(--question-tip);
+}
+
+::ng-deep {
+  mat-paginator {
+
+    background-color: transparent !important;
+
+    .mat-mdc-paginator-container {
+      justify-content: center !important;
+    }
+
+    .mat-mdc-paginator-range-actions {
+      background: white;
+      border: solid 1px lightgray;
+      border-radius: 16px;
+    }
+
+    .mdc-paginator-range-actions > div{
+      flex: 1 !important;
+    }
+    
+
+    .mdc-paginator-range-actions > div:nth-child(1){
+      order: 3 !important;
+    }
+    .mdc-paginator-range-actions > button:nth-child(2){
+      order: 1 !important;
+    }
+    .mdc-paginator-range-actions > button:nth-child(3){
+      order: 2 !important;
+    }
+    .mdc-paginator-range-actions > button:nth-child(4){
+      order: 4 !important;
+    }
+    .mdc-paginator-range-actions > button:nth-child(5){
+      order: 5 !important;
+    }
+  }
+}

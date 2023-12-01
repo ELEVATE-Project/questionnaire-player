@@ -7,26 +7,41 @@ import { Evidence, Question, ResponseType, Section } from '../../interfaces/ques
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { DialogComponent } from '../dialog/dialog.component';
 import { QuestionnaireService } from '../../services/questionnaire.service';
+import { PageEvent } from '@angular/material/paginator';
 
 @Component({
   selector: 'lib-main',
   templateUrl: './main.component.html',
-  styleUrls: ['./main.component.css'],
+  styleUrls: ['./main.component.scss'],
 })
 export class MainComponent{
   @Input({ required: true }) questions: Array<Question>;
   evidence: Evidence;
   @Input({ required: true }) questionnaireForm: FormGroup;
   @ViewChild('dialogCmp') childDialogComponent: DialogComponent;
+  @Input() questionnaireInstance = false;
   @Input() fileUploadResponse;
   selectedIndex: number;
   dimmerIndex;
   isDimmed;
 
+  pageSize = 1; //Each Question object from Question representing each page irrespective of number of questions it includes
+  pageIndex = 0;
+  hidePageSize = true;
+  showFirstLastButtons = true;
+  disabled = false;
+
+  pageEvent:PageEvent;
+
   constructor(public fb: FormBuilder, public qService: QuestionnaireService) {}
 
   public get reponseType(): typeof ResponseType {
     return ResponseType;
+  }
+
+  handlePageEvent(e:PageEvent){
+    this.pageEvent = e;
+    this.pageIndex = e.pageIndex;
   }
 
   questionTrackBy(index, question) {

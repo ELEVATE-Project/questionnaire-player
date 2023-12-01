@@ -3,6 +3,30 @@
   *ngFor="let question of questions; let qi = index; trackBy: questionTrackBy"
 >
   <ng-container
+    *ngIf="(!questionnaireInstance && qi == pageIndex) || questionnaireInstance"
+  >
+    <ng-container
+      [ngTemplateOutlet]="questionnaire"
+      [ngTemplateOutletContext]="{ question: question, qi: qi }"
+    ></ng-container>
+  </ng-container>
+</div>
+<mat-paginator
+  *ngIf="!questionnaireInstance"
+  #paginator
+  (page)="handlePageEvent($event)"
+  [length]="questions.length"
+  [pageSize]="pageSize"
+  [disabled]="disabled"
+  [showFirstLastButtons]="showFirstLastButtons"
+  [hidePageSize]="hidePageSize"
+  [pageIndex]="pageIndex"
+  aria-label="Select page"
+>
+</mat-paginator>
+
+<ng-template #questionnaire let-question="question" let-qi="qi">
+  <ng-container
     *ngIf="
       question?.sectionHeader &&
       (!question.visibleIf?.length || question.canDisplay == true)
@@ -21,7 +45,8 @@
   </ng-container>
   <div
     [ngStyle]="{
-      padding: question.responseType != 'pageQuestions' ? '30px' : 0
+      padding: question.responseType != 'pageQuestions' ? '30px' : 0,
+      margin: question.responseType != 'pageQuestions' ? '20px' : 0
     }"
     [ngClass]="{
       'mat-elevation-z8': question.responseType != 'pageQuestions',
@@ -72,15 +97,13 @@
           [question]="question"
         ></lib-text-input>
         <ng-container
-          *ngIf="
-            question.responseType == reponseType.PAGEQUESTIONS;
-            pageQuestions
-          "
+          *ngIf="question.responseType == reponseType.PAGEQUESTIONS"
         >
           <lib-main
             [questions]="question.pageQuestions"
             [questionnaireForm]="questionnaireForm"
             [fileUploadResponse]="fileUploadResponse"
+            [questionnaireInstance]="true"
           ></lib-main>
         </ng-container>
         <lib-number-input
@@ -123,6 +146,7 @@
               [questions]="libMatrix.context.questions"
               [questionnaireForm]="libMatrix.matrixForm"
               [fileUploadResponse]="fileUploadResponse"
+              [questionnaireInstance]="true"
             ></lib-main>
           </ng-template>
         </lib-matrix-questions>
@@ -152,4 +176,4 @@
       </div>
     </div>
   </div>
-</div>
+</ng-template>

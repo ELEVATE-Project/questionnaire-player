@@ -1,32 +1,36 @@
-.btn-primary{
-    background-color:var(--primary-color);
-    color: var(--general-btn-text-color);
-    cursor: pointer;
-    border: solid transparent 1px;
-    border-radius: 20px;
-    padding: 10px;
+.btn-primary {
+  background-color: var(--primary-color);
+  color: var(--general-btn-text-color);
+  cursor: pointer;
+  border: solid transparent 1px;
+  border-radius: 20px;
+  padding: 10px;
 }
 
-.btn-primary:hover{
-    background-color: var(--general-btn-hover-bg);
-    color: var(--primary-color);
-    border: solid var(--primary-color) 1px;
+.btn-primary:hover {
+  background-color: var(--general-btn-hover-bg);
+  color: var(--primary-color);
+  border: solid var(--primary-color) 1px;
 }
 
-.btn-disabled{
-    background-color:var(--disabled-btn-bg);
-    color: var(--disabled-btn-text);
-    border: solid transparent 1px;
-    border-radius: 20px;
-    padding: 10px;
-    cursor: not-allowed;
+.btn-disabled {
+  background-color: var(--disabled-btn-bg);
+  color: var(--disabled-btn-text);
+  border: solid transparent 1px;
+  border-radius: 20px;
+  padding: 10px;
+  cursor: not-allowed;
 }
 
-.btn-outline-secondary{
-    background-color:var(--secondary-btn-bg);
-    color: var(--primary-color);
-    border: solid  var(--primary-color) 1px;
-    border-radius: 20px;
-    padding: 10px;
-    cursor: pointer;
+.btn-outline-secondary {
+  background-color: var(--secondary-btn-bg);
+  color: var(--primary-color);
+  border: solid var(--primary-color) 1px;
+  border-radius: 20px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.custom-font {
+  font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
 }
