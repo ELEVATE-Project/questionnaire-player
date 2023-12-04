@@ -1,24 +1,27 @@
 import {
   Component,
   Input,
+  OnInit,
+  TemplateRef,
   ViewChild,
 } from '@angular/core';
 import { Evidence, Question, ResponseType, Section } from '../../interfaces/questionnaire.type';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { DialogComponent } from '../dialog/dialog.component';
 import { QuestionnaireService } from '../../services/questionnaire.service';
-import { PageEvent } from '@angular/material/paginator';
+import { MatPaginator, PageEvent } from '@angular/material/paginator';
 
 @Component({
   selector: 'lib-main',
   templateUrl: './main.component.html',
   styleUrls: ['./main.component.scss'],
 })
-export class MainComponent{
+export class MainComponent implements OnInit{
   @Input({ required: true }) questions: Array<Question>;
   evidence: Evidence;
   @Input({ required: true }) questionnaireForm: FormGroup;
   @ViewChild('dialogCmp') childDialogComponent: DialogComponent;
+  @ViewChild('paginator') paginator:MatPaginator;
   @Input() questionnaireInstance = false;
   @Input() fileUploadResponse;
   selectedIndex: number;
@@ -32,6 +35,8 @@ export class MainComponent{
   disabled = false;
 
   pageEvent:PageEvent;
+  paginatorMap = new Map();
+  paginatorLength:number;
 
   constructor(public fb: FormBuilder, public qService: QuestionnaireService) {}
 
@@ -39,9 +44,43 @@ export class MainComponent{
     return ResponseType;
   }
 
+  ngOnInit(): void {
+    this.questions.map(question => {
+      if ((typeof question.visibleIf == 'string' || null || undefined) && !this.questionnaireInstance) {
+        console.log(question)
+        // this.paginatorMap.set(question._id,true)
+        question['canDisplay'] = true;
+      }
+    })
+    // if(!this.questionnaireInstance){
+    //   console.log(this.paginatorMap)
+    //   this.paginatorLength = this.paginatorMap.size;
+    // }
+  }
+
   handlePageEvent(e:PageEvent){
+    const currentPage = this.pageIndex;
     this.pageEvent = e;
     this.pageIndex = e.pageIndex;
+    console.log('page event',e)
+    let foundNextVisibleQuestion = false;
+    if(this.questions[e.pageIndex] && !this.questions[e.pageIndex].canDisplay){
+      for(let i= 0; i < this.questions.length; i++){
+        if(this.questions[i].canDisplay){
+          this.pageIndex = i;
+          this.paginator.pageIndex = i;
+          this.showFirstLastButtons = true;
+          foundNextVisibleQuestion = true;
+          break;
+        }
+      }
+      if(!foundNextVisibleQuestion){
+        this.pageIndex = currentPage;
+        this.paginator.pageIndex = currentPage;
+        this.showFirstLastButtons = false;
+        console.log('page event',e)
+      }
+    }
   }
 
   questionTrackBy(index, question) {
@@ -62,6 +101,8 @@ export class MainComponent{
       if (children.includes(q._id)) {
         let child = this.questions[i];
         child['canDisplay'] = this.canDisplayChildQ(child, i);
+        console.log(child);
+
         if (child['canDisplay'] == false) {
           child.value = '';
           this.questionnaireForm.removeControl(child._id);

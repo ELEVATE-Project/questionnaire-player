@@ -3,7 +3,7 @@
   *ngFor="let question of questions; let qi = index; trackBy: questionTrackBy"
 >
   <ng-container
-    *ngIf="(!questionnaireInstance && qi == pageIndex) || questionnaireInstance"
+    *ngIf="(!questionnaireInstance && qi == pageIndex && question.canDisplay) || questionnaireInstance"
   >
     <ng-container
       [ngTemplateOutlet]="questionnaire"
