@@ -16,12 +16,12 @@ import { MatPaginator, PageEvent } from '@angular/material/paginator';
   templateUrl: './main.component.html',
   styleUrls: ['./main.component.scss'],
 })
-export class MainComponent implements OnInit{
+export class MainComponent implements OnInit {
   @Input({ required: true }) questions: Array<Question>;
   evidence: Evidence;
   @Input({ required: true }) questionnaireForm: FormGroup;
   @ViewChild('dialogCmp') childDialogComponent: DialogComponent;
-  @ViewChild('paginator') paginator:MatPaginator;
+  @ViewChild('paginator') paginator: MatPaginator;
   @Input() questionnaireInstance = false;
   @Input() fileUploadResponse;
   selectedIndex: number;
@@ -34,9 +34,9 @@ export class MainComponent implements OnInit{
   showFirstLastButtons = true;
   disabled = false;
 
-  pageEvent:PageEvent;
+  pageEvent: PageEvent;
   paginatorMap = new Map();
-  paginatorLength:number;
+  paginatorLength: number;
 
   constructor(public fb: FormBuilder, public qService: QuestionnaireService) {}
 
@@ -45,42 +45,46 @@ export class MainComponent implements OnInit{
   }
 
   ngOnInit(): void {
-    this.questions.map(question => {
-      if ((typeof question.visibleIf == 'string' || null || undefined) && !this.questionnaireInstance) {
-        console.log(question)
-        // this.paginatorMap.set(question._id,true)
+    this.questions.map((question) => {
+      if (
+        (typeof question.visibleIf == 'string' || null || undefined) &&
+        !this.questionnaireInstance
+      ) {
         question['canDisplay'] = true;
       }
-    })
-    // if(!this.questionnaireInstance){
-    //   console.log(this.paginatorMap)
-    //   this.paginatorLength = this.paginatorMap.size;
-    // }
+    });
   }
 
-  handlePageEvent(e:PageEvent){
+  handlePageEvent(e: PageEvent) {
     const currentPage = this.pageIndex;
     this.pageEvent = e;
     this.pageIndex = e.pageIndex;
-    console.log('page event',e)
-    let foundNextVisibleQuestion = false;
-    if(this.questions[e.pageIndex] && !this.questions[e.pageIndex].canDisplay){
-      for(let i= 0; i < this.questions.length; i++){
-        if(this.questions[i].canDisplay){
-          this.pageIndex = i;
-          this.paginator.pageIndex = i;
-          this.showFirstLastButtons = true;
-          foundNextVisibleQuestion = true;
-          break;
-        }
-      }
-      if(!foundNextVisibleQuestion){
-        this.pageIndex = currentPage;
-        this.paginator.pageIndex = currentPage;
-        this.showFirstLastButtons = false;
-        console.log('page event',e)
+
+    if (
+      this.questions[e.pageIndex] &&
+      !this.questions[e.pageIndex].canDisplay &&
+      !this.findNextVisibleQuestion(e.pageIndex, currentPage)
+    ) {
+      this.pageIndex = currentPage;
+      this.paginator.pageIndex = currentPage;
+    }
+  }
+
+private findNextVisibleQuestion(eventPageIndex: number,currentPageIndex: number): boolean {
+   let step = 1;
+   let endIndex = this.questions.length;
+   if(currentPageIndex > eventPageIndex){
+    endIndex = 0;
+    step = -1;
+   }
+    for (let i = eventPageIndex; this.questions[i]; i += step) {
+      if (this.questions[i].canDisplay) {
+        this.pageIndex = i;
+        this.paginator.pageIndex = i;
+        return true;
       }
     }
+    return false;
   }
 
   questionTrackBy(index, question) {
@@ -88,7 +92,6 @@ export class MainComponent implements OnInit{
   }
 
   openDialog(hint) {
-    // this.dimmerIndex = questionIndex;
     this.isDimmed = !this.isDimmed;
     this.childDialogComponent.hint = hint;
     this.childDialogComponent?.openDialog('300ms', '150ms');
