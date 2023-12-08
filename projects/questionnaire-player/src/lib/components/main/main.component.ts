@@ -53,13 +53,20 @@ export class MainComponent implements OnInit {
         question['canDisplay'] = true;
       }
     });
+          this.paginatorLength = this.questions.length;
+
+    // if(!this.findNextVisibleQuestion(this.pageIndex,this.questions.length)){
+    //   this.paginatorLength = this.pageIndex + 1;
+    // }else{
+    //   this.paginatorLength = this.questions.length;
+    // }
+  
   }
 
   handlePageEvent(e: PageEvent) {
     const currentPage = this.pageIndex;
     this.pageEvent = e;
     this.pageIndex = e.pageIndex;
-
     if (
       this.questions[e.pageIndex] &&
       !this.questions[e.pageIndex].canDisplay &&
@@ -67,6 +74,7 @@ export class MainComponent implements OnInit {
     ) {
       this.pageIndex = currentPage;
       this.paginator.pageIndex = currentPage;
+      this.paginatorLength = currentPage +1;
     }
   }
 
@@ -99,19 +107,24 @@ private findNextVisibleQuestion(eventPageIndex: number,currentPageIndex: number)
 
   toggleQuestion(parent) {
     const { children } = parent;
-
     this.questions.map((q, i) => {
       if (children.includes(q._id)) {
         let child = this.questions[i];
         child['canDisplay'] = this.canDisplayChildQ(child, i);
-        console.log(child);
-
         if (child['canDisplay'] == false) {
           child.value = '';
           this.questionnaireForm.removeControl(child._id);
         }
       }
     });
+    if(!this.questionnaireInstance){
+      if(!this.findNextVisibleQuestion(this.pageIndex,this.questions.length)){
+        this.paginatorLength = this.pageIndex + 1;
+      }else{
+        this.paginatorLength = this.questions.length;
+      }
+    }
+   
   }
 
   canDisplayChildQ(currentQuestion: Question, currentQuestionIndex: number) {

@@ -15,7 +15,7 @@
   *ngIf="!questionnaireInstance"
   #paginator
   (page)="handlePageEvent($event)"
-  [length]="questions.length"
+  [length]="paginatorLength"
   [pageSize]="pageSize"
   [disabled]="disabled"
   [showFirstLastButtons]="showFirstLastButtons"
