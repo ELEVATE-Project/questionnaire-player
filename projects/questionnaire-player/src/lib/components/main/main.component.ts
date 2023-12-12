@@ -45,48 +45,27 @@ export class MainComponent implements OnInit {
   }
 
   ngOnInit(): void {
-    this.questions.map((question) => {
-      if (
-        (typeof question.visibleIf == 'string' || null || undefined) &&
-        !this.questionnaireInstance
-      ) {
-        question['canDisplay'] = true;
-      }
-    });
     this.paginatorLength = this.questions.length;
-
-    // if(!this.findNextVisibleQuestion(this.pageIndex,this.questions.length)){
-    //   this.paginatorLength = this.pageIndex + 1;
-    // }else{
-    //   this.paginatorLength = this.questions.length;
-    // }
-  
   }
 
   handlePageEvent(e: PageEvent) {
-    const currentPage = this.pageIndex;
-    this.pageEvent = e;
-    this.pageIndex = e.pageIndex;
-    if (
-      this.questions[e.pageIndex] &&
-      !this.questions[e.pageIndex].canDisplay &&
-      !this.findNextVisibleQuestion(e.pageIndex, currentPage)
-    ) {
-      this.pageIndex = currentPage;
-      this.paginator.pageIndex = currentPage;
-      this.paginatorLength = currentPage +1;
+    if (this.questions[e.pageIndex] && !this.findNextVisibleQuestion(e.pageIndex, this.pageIndex)) {
+      this.paginator.pageIndex = this.pageIndex;
+      this.paginatorLength = this.pageIndex +1;
     }
   }
 
-private findNextVisibleQuestion(eventPageIndex: number,currentPageIndex: number): boolean {
-   let step = 1;
-   let endIndex = this.questions.length;
-   if(currentPageIndex > eventPageIndex){
-    endIndex = 0;
-    step = -1;
-   }
+  private findNextVisibleQuestion(eventPageIndex: number, currentPageIndex: number): boolean {
+    let step = 1;
+    let endIndex = this.questions.length;
+    if (currentPageIndex > eventPageIndex) {
+      endIndex = 0;
+      step = -1;
+    }
     for (let i = eventPageIndex; this.questions[i]; i += step) {
-      if (this.questions[i].canDisplay) {
+      if (Array.isArray(this.questions[i].visibleIf) && this.questions[i].canDisplay
+        || !Array.isArray(this.questions[i].visibleIf)) {
+        console.log('found the next one', this.questions[i])
         this.pageIndex = i;
         this.paginator.pageIndex = i;
         return true;
