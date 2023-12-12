@@ -53,7 +53,7 @@ export class MainComponent implements OnInit {
         question['canDisplay'] = true;
       }
     });
-          this.paginatorLength = this.questions.length;
+    this.paginatorLength = this.questions.length;
 
     // if(!this.findNextVisibleQuestion(this.pageIndex,this.questions.length)){
     //   this.paginatorLength = this.pageIndex + 1;
