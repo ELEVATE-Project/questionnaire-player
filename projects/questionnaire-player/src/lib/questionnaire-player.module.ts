@@ -40,7 +40,7 @@ import { MainWrapperComponent } from './components/main-wrapper/main-wrapper.com
 import { SanitizeUrlPipe } from './pipes/sanitize-url.pipe';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { MatPaginatorModule } from '@angular/material/paginator';
-import { QuestionnaireComponent } from './components/questionnaire/questionnaire.component';
+import { PaginatorComponent } from './components/paginator/paginator.component';
 
 const MAT_CUSTOM_DATE_FORMATS = {
   parse: {
@@ -71,8 +71,8 @@ const MAT_CUSTOM_DATE_FORMATS = {
     AlertComponent,
     MatrixQuestionsComponent,
     SanitizeUrlPipe,
-    QuestionnaireComponent,
-  ],
+    PaginatorComponent
+    ],
   imports: [
     CommonModule,
     BrowserAnimationsModule,

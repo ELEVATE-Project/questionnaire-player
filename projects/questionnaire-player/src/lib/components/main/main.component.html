@@ -5,17 +5,10 @@
         let qi = index;
         trackBy: questionTrackBy
       ">
-      <!-- <ng-container
-    *ngIf="(!questionnaireInstance && qi == pageIndex && question.canDisplay) || questionnaireInstance"
-  > -->
       <ng-container [ngTemplateOutlet]="questionnaire"
         [ngTemplateOutletContext]="{ question: question, qi: qi }"></ng-container>
-      <!-- </ng-container> -->
     </ng-container>
-    <mat-paginator #paginator (page)="handlePageEvent($event)" [length]="paginatorLength" [pageSize]="pageSize"
-      [disabled]="disabled" [showFirstLastButtons]="showFirstLastButtons" [hidePageSize]="hidePageSize"
-      [pageIndex]="pageIndex" aria-label="Select page">
-    </mat-paginator>
+    <lib-paginator [questions]="questions" [currentPage]="pageIndex" (page)="handlePageEvent($event)"></lib-paginator>
   </ng-container>
 </div>
 <ng-template #paginationNonApplicableInstance>

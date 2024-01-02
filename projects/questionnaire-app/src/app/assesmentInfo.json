@@ -1921,6 +1921,86 @@
                                         "gpsLocation": ""
                                     }
                                 ]
+                            },
+                            {
+                                "_id": "6569cd6ec8649f0009ee592c",
+                                "question": [
+                                    "Your senior has informed you that you are required to make a few changes in the current Health plan of students. You have also been briefed with what changes have to be implemented. When and how would you involve school principals to implement these changes across all schools of your district?",
+                                    ""
+                                ],
+                                "isCompleted": false,
+                                "showRemarks": false,
+                                "options": [
+                                    {
+                                        "value": "R1",
+                                        "label": "Mathematics"
+                                    },
+                                    {
+                                        "value": "R2",
+                                        "label": "Involve the school principals sometimes in the plan of implementing these changes."
+                                    },
+                                    {
+                                        "value": "R3",
+                                        "label": "Involve the principals throughout the project right from planning to implementation ensuring their involvement leads to commitment"
+                                    },
+                                    {
+                                        "value": "R4",
+                                        "label": "Involve the principals throughout the project right from planning to implementation ensuring their involvement leads to commitment"
+                                    },
+                                    {
+                                        "value": "R5",
+                                        "label": "Involve principals and community members towards implementation of changes in the health plan"
+                                    }
+                                ],
+                                "sliderOptions": [],
+                                "children": [],
+                                "questionGroup": [
+                                    "A1"
+                                ],
+                                "fileName": [],
+                                "instanceQuestions": [],
+                                "isAGeneralQuestion": false,
+                                "autoCapture": false,
+                                "allowAudioRecording": false,
+                                "prefillFromEntityProfile": false,
+                                "entityFieldName": "",
+                                "isEditable": true,
+                                "showQuestionInPreview": false,
+                                "deleted": false,
+                                "remarks": "",
+                                "value": "",
+                                "usedForScoring": "",
+                                "questionType": "auto",
+                                "canBeNotApplicable": "false",
+                                "visibleIf": "",
+                                "validation": {
+                                    "required": true
+                                },
+                                "externalId": "Q11_1701432675862-1701432686377",
+                                "tip": "",
+                                "hint": "",
+                                "responseType": "radio",
+                                "modeOfCollection": "onfield",
+                                "accessibility": "No",
+                                "rubricLevel": "",
+                                "sectionHeader": "Data based Governance",
+                                "page": "p3",
+                                "questionNumber": "11",
+                                "updatedAt": "2023-12-01T12:11:26.387Z",
+                                "createdAt": "2023-12-01T12:11:23.651Z",
+                                "__v": 0,
+                                "createdFromQuestionId": "6569cd6bc8649f0009ee58de",
+                                "evidenceMethod": "D2_1701432675862",
+                                "payload": {
+                                    "criteriaId": "6569cd6ec8649f0009ee594b",
+                                    "responseType": "radio",
+                                    "evidenceMethod": "D2_1701432675862",
+                                    "rubricLevel": ""
+                                },
+                                "startTime": "",
+                                "endTime": "",
+                                "gpsLocation": "",
+                                "file": ""
                             }
                         ],
                         "name": "Observation Question"

@@ -21,7 +21,6 @@ export class MainComponent implements OnInit {
   evidence: Evidence;
   @Input({ required: true }) questionnaireForm: FormGroup;
   @ViewChild('dialogCmp') childDialogComponent: DialogComponent;
-  @ViewChild('paginator') paginator: MatPaginator;
   @Input() questionnaireInstance = false;
   @Input() fileUploadResponse;
   selectedIndex: number;
@@ -48,9 +47,8 @@ export class MainComponent implements OnInit {
     this.paginatorLength = this.questions.length;
   }
 
-  handlePageEvent(e: PageEvent) {
+  handlePageEvent(e) {
     if (this.questions[e.pageIndex] && !this.findNextVisibleQuestion(e.pageIndex, this.pageIndex)) {
-      this.paginator.pageIndex = this.pageIndex;
       this.paginatorLength = this.pageIndex +1;
     }
   }
@@ -65,9 +63,8 @@ export class MainComponent implements OnInit {
     for (let i = eventPageIndex; this.questions[i]; i += step) {
       if (Array.isArray(this.questions[i].visibleIf) && this.questions[i].canDisplay
         || !Array.isArray(this.questions[i].visibleIf)) {
-        console.log('found the next one', this.questions[i])
+        // console.log('found the next one', this.questions[i])
         this.pageIndex = i;
-        this.paginator.pageIndex = i;
         return true;
       }
     }

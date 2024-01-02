@@ -39,36 +39,5 @@
   mat-paginator {
 
     background-color: transparent !important;
-
-    .mat-mdc-paginator-container {
-      justify-content: center !important;
-    }
-
-    .mat-mdc-paginator-range-actions {
-      background: white;
-      border: solid 1px lightgray;
-      border-radius: 16px;
-    }
-
-    .mdc-paginator-range-actions > div{
-      flex: 1 !important;
-    }
-    
-
-    .mdc-paginator-range-actions > div:nth-child(1){
-      order: 3 !important;
-    }
-    .mdc-paginator-range-actions > button:nth-child(2){
-      order: 1 !important;
-    }
-    .mdc-paginator-range-actions > button:nth-child(3){
-      order: 2 !important;
-    }
-    .mdc-paginator-range-actions > button:nth-child(4){
-      order: 4 !important;
-    }
-    .mdc-paginator-range-actions > button:nth-child(5){
-      order: 5 !important;
-    }
   }
 }

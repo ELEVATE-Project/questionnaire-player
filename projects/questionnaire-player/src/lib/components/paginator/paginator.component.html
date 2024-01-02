@@ -1,0 +1,31 @@
+<div style="display: flex;justify-content: center;">
+    <div class="paginator-container" style="display: flex;flex-direction: row;align-items: center;gap: 5px;justify-content: space-around;">
+        <button
+        [disabled]="currentPage == 0"
+        mat-icon-button
+        matTooltip="Previous"
+        [ngStyle]="{'color':currentPage !== 0 ? 'var(--primary-color)' : 'gray'}"
+        aria-label="icon-button with a arrow_back icon"
+        (click)="pageChange(currentPage-1)"
+      >
+        <mat-icon>arrow_back</mat-icon>
+      </button>
+      <div *ngFor="let page of displayedPages; let pageIndex=index" style="display: flex;flex-direction: row;gap: 10px;">
+        <ng-container *ngIf="page !== -1; else ellipses">
+       <button mat-button (click)="pageChange(pageIndex)" [disabled]="questions[pageIndex]?.visibleIf !== '' && !questions[pageIndex]?.canDisplay" [ngStyle]="{'border':currentPage == pageIndex ? 'solid 1px rebeccapurple' : 0,'cursor':(questions[pageIndex]?.visibleIf !== '' && !questions[pageIndex]?.canDisplay) ? 'not-allowed':'pointer'}" style="border-radius: 8px;"> {{pageIndex+1}}</button>
+        </ng-container>
+        <ng-template #ellipses>...</ng-template>
+    </div>
+      <button
+      [disabled]="currentPage == questions.length-1"
+        mat-icon-button
+        matTooltip="Forward"
+        [ngStyle]="{'color':currentPage !== questions.length-1 ? 'var(--primary-color)' : 'gray'}"
+        aria-label="icon-button with a arrow_forward icon"
+        (click)="pageChange(currentPage+1)"
+      >
+        <mat-icon>arrow_forward</mat-icon>
+      </button>
+    </div>
+</div>
+
