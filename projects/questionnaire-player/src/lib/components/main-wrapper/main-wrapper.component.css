@@ -34,3 +34,25 @@
 .custom-font {
   font-family: "Gill Sans", "Gill Sans MT", Calibri, "Trebuchet MS", sans-serif;
 }
+
+.wrapper{
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  margin: 0;
+}
+
+.main{
+  flex: 1;
+}
+
+.footer {
+  width: 100%;
+}
+
+.partition{
+  margin-top: 2rem;
+  width: 100%;
+  background-color :var(--primary-color);
+  height:1px;
+}

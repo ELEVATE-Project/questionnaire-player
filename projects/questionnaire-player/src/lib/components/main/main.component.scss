@@ -26,18 +26,12 @@
 
 @media screen and (max-width: 768px) {
   .responsive-margin {
-    margin: 20px 0;
+    margin: 1rem 0 !important;
+    padding: 0.8rem 0.2rem !important;
   }
 }
 
 .question-tip {
   font-size: smaller;
   color: var(--question-tip);
-}
-
-::ng-deep {
-  mat-paginator {
-
-    background-color: transparent !important;
-  }
 }

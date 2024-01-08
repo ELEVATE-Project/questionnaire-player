@@ -22,7 +22,7 @@ export class PaginatorComponent implements OnChanges{
   calculateDisplayedPages(): void {
     let startPage = 0;
     let endPage = this.questions.length-1;
-    const allowedToShow = [startPage,startPage+1,endPage,endPage-1].includes(this.currentPage) ? (this.maxDisplayedPages/2) :(this.maxDisplayedPages/2)-2
+    const allowedToShow = [startPage,endPage].includes(this.currentPage) ? (this.maxDisplayedPages/2) : [startPage+1,endPage-1].includes(this.currentPage) ? (this.maxDisplayedPages/2)-1:(this.maxDisplayedPages/2)-2
     console.log('start page',startPage);
     console.log('end page',endPage);
 
