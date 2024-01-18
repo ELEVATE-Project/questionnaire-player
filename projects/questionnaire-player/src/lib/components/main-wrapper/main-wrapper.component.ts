@@ -10,7 +10,7 @@ import { QuestionnaireService } from '../../services/questionnaire.service';
 @Component({
   selector: 'lib-main-wrapper',
   templateUrl: './main-wrapper.component.html',
-  styleUrls: ['./main-wrapper.component.css'],
+  styleUrls: ['./main-wrapper.component.scss'],
 })
 export class MainWrapperComponent{
   questions: Array<Question>;

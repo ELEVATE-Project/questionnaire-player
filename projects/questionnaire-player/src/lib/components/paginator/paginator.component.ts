@@ -3,7 +3,7 @@ import { Component, EventEmitter, Input, OnChanges, Output, SimpleChanges } from
 @Component({
   selector: 'lib-paginator',
   templateUrl: './paginator.component.html',
-  styleUrls: ['./paginator.component.css']
+  styleUrls: ['./paginator.component.scss']
 })
 export class PaginatorComponent implements OnChanges{
   @Input() questions;
