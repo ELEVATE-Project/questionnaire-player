@@ -30,7 +30,7 @@ export class AttachmentComponent implements OnChanges {
   constructor(private dialog: MatDialog, private cdr: ChangeDetectorRef) {}
 
   ngOnChanges(changes: SimpleChanges): void {
-    if (changes['fileUploadResponse'] && this.fileUploadResponse?.status) {
+    if (changes['fileUploadResponse'] && !changes['fileUploadResponse'].firstChange && this.fileUploadResponse?.status) {
       const status = this.fileUploadResponse?.status;
       const successMessage = 'Evidence upload successfully!';
       const failureMessage = 'Unable to upload the file. Please try again.';
@@ -74,7 +74,6 @@ export class AttachmentComponent implements OnChanges {
   }
   getFileType(fileName) {
     const type = fileName.split('.').pop();
-    console.log(this.formats);
     for(const key of Object.keys(this.formats)){
       if(this.formats[key].includes(type)){
         return key;
