@@ -63,7 +63,6 @@ export class MainComponent implements OnInit {
     for (let i = eventPageIndex; this.questions[i]; i += step) {
       if (Array.isArray(this.questions[i].visibleIf) && this.questions[i].canDisplay
         || !Array.isArray(this.questions[i].visibleIf)) {
-        // console.log('found the next one', this.questions[i])
         this.pageIndex = i;
         return true;
       }

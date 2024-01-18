@@ -22,9 +22,7 @@ export class PaginatorComponent implements OnChanges{
   calculateDisplayedPages(): void {
     let startPage = 0;
     let endPage = this.questions.length-1;
-    const allowedToShow = [startPage,endPage].includes(this.currentPage) ? (this.maxDisplayedPages/2) : [startPage+1,endPage-1].includes(this.currentPage) ? (this.maxDisplayedPages/2)-1:(this.maxDisplayedPages/2)-2
-    console.log('start page',startPage);
-    console.log('end page',endPage);
+    const allowedToShow = [startPage,endPage].includes(this.currentPage) ? (this.maxDisplayedPages/2) : [startPage+1,endPage-1].includes(this.currentPage) ? (this.maxDisplayedPages/2)-1:(this.maxDisplayedPages/2)-2;
 
     if (this.questions.length <= this.maxDisplayedPages) {
       this.displayedPages = Array.from({ length: this.questions.length }, (_, i) => i + 1);
@@ -40,8 +38,6 @@ export class PaginatorComponent implements OnChanges{
       }
 
       this.displayedPages.push(endPage);
-      // this.displayedPages = [...new Set(this.displayedPages)];
-      console.log('diaplyed page',this.displayedPages);
     }
   }
 

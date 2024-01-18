@@ -31,7 +31,6 @@ export class AttachmentComponent implements OnChanges {
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['fileUploadResponse'] && !changes['fileUploadResponse'].firstChange && this.fileUploadResponse?.status) {
-      console.log(changes)
       const status = this.fileUploadResponse?.status;
       const successMessage = 'Evidence upload successfully!';
       const failureMessage = 'Unable to upload the file. Please try again.';
