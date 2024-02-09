@@ -22,11 +22,11 @@ In-case the changes have been done in the library, after successful build by `np
 
 ## Webcomponent
 
-The Webcomponent can be downloaded by running `npm i @Elevate/questionnaire-webcomponent`
+The Webcomponent can be downloaded by running `npm i @elevate/ questionnaire-player-webcomponent`
 
-In our angular.json file, we have included the published web component script under the "scripts" section (projects -> questionnaire-app -> architect -> build). This script is responsible for adding the questionnaire player web component functionality to our demo application `node_modules/@Elevate/questionnaire-webcomponent/questionnaire-player-webcomponent.js`
+In our angular.json file, we have included the published web component script under the "scripts" section (projects -> questionnaire-app -> architect -> build). This script is responsible for adding the questionnaire player web component functionality to our demo application `node_modules/@elevate/ questionnaire-player-webcomponent/questionnaire-player-webcomponent.js`
 
-To include the npm published styles of the webcomponent in the demo app, use `node_modules/@Elevate/questionnaire-webcomponent/styles.scss` in the "styles" section (projects -> questionnaire-app -> architect -> build in angular.json)'.
+To include the npm published styles of the webcomponent in the demo app, use `node_modules/@elevate/ questionnaire-player-webcomponent/styles.css` in the "styles" section (projects -> questionnaire-app -> architect -> build in angular.json)'.
 
 For usage of the webcomponent in a react app, visit : [https://github.com/5Amogh/react-usingwebcomponent-app]
 

@@ -1,5 +1,5 @@
 {
-  "name": "@Elevate/questionnaire-webcomponent",
+  "name": "@elevate/ questionnaire-player-webcomponent",
   "version": "1.0.0",
   "description": "The webcomponent for the questionnaire library",
   "main": "questionnaire-player-webcomponent.js",
