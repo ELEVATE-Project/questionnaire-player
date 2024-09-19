@@ -50,20 +50,46 @@ export class DateInputComponent implements OnInit {
 
   onChange(event) {
     if(!event.value || !event.value._isValid) return
-    const selectedDate = new Date(event.value._d);
-    const tempDate = new Date();
-    selectedDate.setHours(tempDate.getHours());
-    selectedDate.setMinutes(tempDate.getMinutes());
-    this.question.value = selectedDate.toISOString();
+    this.question.value = this.dateSetting(event.value._d);
     this.questionnaireForm.controls[this.question._id].patchValue(
       this.question.value 
     )
     this.question.endTime = Date.now();;
   }
 
+  dateSetting(date:any){
+    const selectedDate = new Date(date);
+    const tempDate = new Date();
+    selectedDate.setHours(tempDate.getHours());
+    selectedDate.setMinutes(tempDate.getMinutes());
+    return selectedDate.toISOString();
+  }
+
   autoCapture() {
+    this.question.value = this.dateSetting(Date.now());
     this.questionnaireForm.controls[this.question._id].patchValue(
       new Date(Date.now())
     );
+    this.question.endTime = Date.now();;
+
+  }
+
+  get isValid(): boolean {
+    return this.questionnaireForm.controls[this.question._id].valid;
+  }
+
+  get isTouched(): boolean {
+    return this.questionnaireForm.controls[this.question._id].touched;
+  }
+
+  getValidationMessage(controlName: string): string {
+    const control = this.questionnaireForm.get(controlName);
+    if (control.errors) {
+      const validationErrors = control.errors;
+      if (validationErrors['err']) {
+        return validationErrors['err'];
+      }
+    }
+    return '';
   }
 }

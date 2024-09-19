@@ -11,7 +11,7 @@
       id="{{ question._id + o.value }}"
       >{{ o.label }}
       <ng-container
-        *ngIf="question?.option && question?.option[optionIndex]?.hint"
+        *ngIf="question?.options && question?.options[optionIndex]?.hint"
       >
         <button
           mat-icon-button
@@ -26,9 +26,11 @@
     </mat-radio-button>
   </mat-radio-group>
 </div>
+<mat-error *ngIf="questionnaireForm?.contains(question._id) && isTouched && !isValid">{{ getValidationMessage(question._id) }}</mat-error>
 
 <lib-dialog
   [isDimmed]="isDimmed"
   (closeHintEmitter)="closeHint()"
   [hint]="hint"
+  [hintModalNote] = "hintModalNote"
 ></lib-dialog>

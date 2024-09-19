@@ -82,7 +82,7 @@ export interface Question {
   question: string;
   isCompleted: boolean;
   showRemarks: string;
-  options: string;
+  options: any;
   option?:{hint:"",tip:""}[]
   sliderOptions: string;
   children: string[];
@@ -153,6 +153,7 @@ export enum ResponseType {
   SLIDER = 'slider',
   PAGEQUESTIONS = 'pageQuestions',
   MATRIX = 'matrix',
+  TEXTAREA='textDescription'
 }
 
 export type FileUnion = FileClass | string;
@@ -197,4 +198,12 @@ export interface Submissions {}
 
 export interface ImageCompression {
   quality: number;
+}
+
+export interface ApiConfiguration{
+  baseURL:string;
+  userAuthToken:string;
+  solutionId:string;
+  solutionType:'survey' | 'observation';
+  fileSizeLimit:number
 }
