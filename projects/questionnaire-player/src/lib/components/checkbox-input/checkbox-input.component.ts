@@ -23,7 +23,6 @@ export class CheckboxInputComponent implements OnInit {
 
   ngOnInit() {
     this.hintCloseText = 'Close';
-    this.hintModalNote = 'This is a modal hint';
     setTimeout(() => {
       const optionControl = this.options.map((v) => {
         if (
@@ -53,7 +52,8 @@ export class CheckboxInputComponent implements OnInit {
 
   openDialog(optionIndex: number) {
     this.isDimmed = !this.isDimmed;
-    this.hint = this.options[optionIndex]?.hint
+    this.hint = this.options[optionIndex]?.hint;
+    this.hintModalNote = "Note: This is the hint for the following option";
     this.childDialogComponent.openDialog('300ms', '150ms');
   }
 
@@ -81,6 +81,17 @@ export class CheckboxInputComponent implements OnInit {
 
   get isTouched(): boolean {
     return this.questionnaireForm.controls[this.question._id].touched;
+  }
+
+  getValidationMessage(controlName: string): string {
+    const control = this.questionnaireForm.get(controlName);
+    if (control.errors) {
+      const validationErrors = control.errors;
+      if (validationErrors['err']) {
+        return validationErrors['err'];
+      }
+    }
+    return '';
   }
 
   closeHint(){

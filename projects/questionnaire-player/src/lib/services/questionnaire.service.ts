@@ -22,7 +22,7 @@ export class QuestionnaireService {
         return null;
       }
       if (data.validation.regex) {
-        const forbidden = this.testRegex(data.validation.regex, control.value);
+        const forbidden = this.testRegex(data.validation.regex, control.value || '');
         return forbidden ? null : { err: 'Invalid character found' };
       }
 
@@ -50,7 +50,7 @@ export class QuestionnaireService {
           let max = data.validation.max;
           return min <= control.value && control.value <= max
             ? null
-            : { err: 'Selected value  not within range' };
+            : { err: 'Selected value not within range' };
         }
       }
     };

@@ -4,11 +4,11 @@ import { Question, Validation } from '../../interfaces/questionnaire.type';
 import { QuestionnaireService } from '../../services/questionnaire.service';
 
 @Component({
-  selector: 'lib-text-input',
-  templateUrl: './text-input.component.html',
-  styleUrls: ['./text-input.component.scss']
+  selector: 'lib-text-area',
+  templateUrl: './text-area.component.html',
+  styleUrls: ['./text-area.component.css']
 })
-export class TextInputComponent implements OnInit {
+export class TextAreaComponent implements OnInit {
   text: string;
   @Input() questionnaireForm: FormGroup;
   @Input() question : Question;

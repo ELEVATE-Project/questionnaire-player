@@ -1,40 +1,41 @@
 import {
+  AfterViewInit,
   Component,
   Input,
   OnInit,
   TemplateRef,
   ViewChild,
 } from '@angular/core';
-import { Evidence, Question, ResponseType, Section } from '../../interfaces/questionnaire.type';
+import { Question, ResponseType } from '../../interfaces/questionnaire.type';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { DialogComponent } from '../dialog/dialog.component';
 import { QuestionnaireService } from '../../services/questionnaire.service';
-import { MatPaginator, PageEvent } from '@angular/material/paginator';
 
 @Component({
   selector: 'lib-main',
   templateUrl: './main.component.html',
   styleUrls: ['./main.component.scss'],
 })
-export class MainComponent implements OnInit {
+export class MainComponent implements OnInit, AfterViewInit {
   @Input({ required: true }) questions: Array<Question>;
-  evidence: Evidence;
+  @Input() isSubmitted: boolean;
   @Input({ required: true }) questionnaireForm: FormGroup;
   @ViewChild('dialogCmp') childDialogComponent: DialogComponent;
   @Input() questionnaireInstance = false;
   @Input() fileUploadResponse;
+  @Input() fileSizeLimit;
+  @ViewChild('questionnaire') questionnaire:TemplateRef<any>;
   selectedIndex: number;
   dimmerIndex;
   isDimmed;
+  hintModalNote:string
+  @Input() isExpired:boolean;
 
   pageSize = 1; //Each Question object from Question representing each page irrespective of number of questions it includes
   pageIndex = 0;
   hidePageSize = true;
   showFirstLastButtons = true;
   disabled = false;
-
-  pageEvent: PageEvent;
-  paginatorMap = new Map();
   paginatorLength: number;
 
   constructor(public fb: FormBuilder, public qService: QuestionnaireService) {}
@@ -47,10 +48,37 @@ export class MainComponent implements OnInit {
     this.paginatorLength = this.questions.length;
   }
 
+  ngAfterViewInit(): void {
+   this.enableRelevantPage();
+  }
+  
+  enableRelevantPage(questionId?){
+    if(!this.questionnaireInstance){
+      for(let i = 0; i < this.questions.length; i++){
+        if(i !== this.pageIndex){
+          this.domQuery(i,'none');
+        }
+      }
+      this.domQuery(this.pageIndex,'block',questionId);
+    }
+  }
+
+  domQuery(elemendId:number,action:string,questionId?:string){
+    if(document.getElementById(`${elemendId}`)){
+      document.getElementById(`${elemendId}`).style.display = action;
+    }
+    if(questionId && document.getElementById(`${questionId}`)){
+      window.setTimeout(() => {
+        document.getElementById(`${questionId}`).focus();
+      },500)
+    }
+  }
+
   handlePageEvent(e) {
     if (this.questions[e.pageIndex] && !this.findNextVisibleQuestion(e.pageIndex, this.pageIndex)) {
       this.paginatorLength = this.pageIndex +1;
     }
+      this.enableRelevantPage();
   }
 
   private findNextVisibleQuestion(eventPageIndex: number, currentPageIndex: number): boolean {
@@ -77,6 +105,7 @@ export class MainComponent implements OnInit {
   openDialog(hint) {
     this.isDimmed = !this.isDimmed;
     this.childDialogComponent.hint = hint;
+    this.childDialogComponent.hintModalNote = "Note: This is the hint for the following question";
     this.childDialogComponent?.openDialog('300ms', '150ms');
   }
 

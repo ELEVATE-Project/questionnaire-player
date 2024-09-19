@@ -57,7 +57,7 @@ export class MatrixQuestionsComponent implements OnInit {
     this.cancelText = 'Cancel';
     setTimeout(() => {
       this.matrixForm = this.fb.group({},Validators.required);
-      this.questionnaireForm.addControl(
+      this.questionnaireForm.setControl(
         this.question._id,
         new FormArray([], [Validators.required])
       );
@@ -107,7 +107,7 @@ export class MatrixQuestionsComponent implements OnInit {
   }
 
   viewInstance(i): void {
-    this.matrixForm.reset();
+    this.matrixForm = this.fb.group({},Validators.required);
     if (this.formAsArray.controls[i].value) {
       this.matrixForm.patchValue(this.formAsArray.controls[i].value);
     }

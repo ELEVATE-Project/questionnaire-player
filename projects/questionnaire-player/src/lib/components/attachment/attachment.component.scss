@@ -9,10 +9,15 @@ label {
 .attachment-btn {
   background-color: var(--secondary-btn-bg);
   color:var(--primary-color);
-  border: solid var(--primary-color) 1px;
-  border-radius: 8px;
-  padding: 5px 15px;
+  border: solid var(--primary-color) 0.063rem;
+  border-radius: 0.25rem;
+  padding: 0px 1rem;
   cursor: pointer;
+  min-width: 5.6rem;
+  min-height: 2.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  display: flex;
 }
 
 .upload-label{
@@ -50,12 +55,18 @@ mat-icon.customizeIcon {
 .close-btn{
   color: rgb(150, 4, 4);
   font-size: large;
+  z-index: -1;
 }
-::ng-deep {
-  @media screen and (max-width:768px) {
 
-    .mdc-dialog .mdc-dialog__content {
-      padding: 0 !important;
-    }
-  }
+
+.close-canle-btn{
+  position: absolute;
+  top: 0.625rem;
+  right: 0.5rem;
+  cursor: pointer;
+  z-index: 1;
+}
+
+.row-wrap{
+  flex-wrap: wrap !important;
 }

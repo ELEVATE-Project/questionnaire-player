@@ -12,11 +12,19 @@ export class AppComponent implements OnInit, OnDestroy {
   sections!: any[];
   assessment!: any;
   fileUploadResponse: any = null;
+  apiConfig = {};
+  saveQuestioner:boolean = false;
   constructor(public fb: FormBuilder, public http: HttpClient) {}
 
   ngOnInit() {
     window.addEventListener('message', this.receiveMessage.bind(this), false);
-    this.assessment = mockData
+    this.assessment = mockData;
+    this.apiConfig ={
+      baseURL:'https://survey-dev.elevate-apis.shikshalokam.org',
+      userAuthToken:'',
+      solutionId:'66cc1fd6933415620e0cebe9',
+      solutionType:'survey'
+    }
   }
 
   receiveMessage(event) {
@@ -93,9 +101,7 @@ export class AppComponent implements OnInit, OnDestroy {
     }
   }
 
-  submitOrSaveEvent(event) {
-    console.log('Event emitted inside the app', event.detail);
-  }
+
   ngOnDestroy() {
     window.removeEventListener('message', this.receiveMessage);
   }
