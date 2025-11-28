@@ -234,7 +234,7 @@ export class QuestionnaireService {
       value = !currentQuestion.value.length ? [] : formValues[currentQuestion._id];
       labels = currentQuestion.value;
     } else {
-      value = currentQuestion.value;
+      value = formValues[currentQuestion._id];
       labels = formValues[currentQuestion._id];
       if (currentQuestion.responseType == 'radio' && currentQuestion.value) {
         labels = currentQuestion.options.find(
@@ -268,6 +268,7 @@ export class QuestionnaireService {
       criteriaId: currentQuestion.payload.criteriaId,
       responseType: currentQuestion.responseType,
       evidenceMethod: currentQuestion.evidenceMethod,
+      visibleIf: currentQuestion.visibleIf,
       rubricLevel: '',
     };
   }
