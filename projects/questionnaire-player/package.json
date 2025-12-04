@@ -1,10 +1,11 @@
 {
-  "name": "diksha-questionnaire-player",
-  "version": "1.0.37",
+  "name": "questionnaire-player",
+  "version": "4.1.30",
   "peerDependencies": {
     "@angular/common": "^16.2.0",
     "@angular/core": "^16.2.0",
-    "chart.js": "^4.4.4"
+    "chart.js": "^4.4.4",
+    "file-saver": "^2.0.5"
   },
   "dependencies": {
     "tslib": "^2.3.0"
