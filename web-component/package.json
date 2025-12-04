@@ -1,8 +1,8 @@
 {
-  "name": "questionnaire-webcomponent",
-  "version": "3.2.12",
+  "name": "diksha-questionnaire-webcomponent",
+  "version": "1.0.37",
   "description": "The webcomponent for the questionnaire library",
-  "main": "questionnaire-player-webcomponent.js",
+  "main": "diksha-questionnaire-player-webcomponent.js",
   "scripts": {
     "test": "n"
   },

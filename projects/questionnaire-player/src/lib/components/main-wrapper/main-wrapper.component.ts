@@ -1,8 +1,12 @@
 import {
+  CSP_NONCE,
   Component,
+  ElementRef,
   Input,
   OnChanges,
+  OnDestroy,
   OnInit,
+  Renderer2,
   SimpleChanges,
   TemplateRef,
   ViewChild,
@@ -24,15 +28,22 @@ import * as urlConfig from '../../constants/url-config.json';
 import { ToastService } from '../../services/toast.service';
 import { ThemePalette } from '@angular/material/core';
 import { ProgressSpinnerMode } from '@angular/material/progress-spinner';
-import { Observable } from 'rxjs';
+import { firstValueFrom, Observable, Subscribable, Subscription } from 'rxjs';
 import { AlertComponent } from '../alert/alert.component';
 import { Location } from '@angular/common';
+// import { BackNavigationHandlerComponent } from '../../shared/components/pie-chart/back-navigation-handler/back-navigation-handler.component';
+import { Router } from '@angular/router';
+import { SharedService } from '../../services/shared.service';
+import { QueryParamsService } from '../../services/queryParams.service';
+import { DbService } from '../../services/db/db.service';
+import { AttachmentService } from '../../services/attachment/attachment.service';
+import { HttpClient, HttpHeaders } from '@angular/common/http';
 @Component({
   selector: 'lib-main-wrapper',
   templateUrl: './main-wrapper.component.html',
   styleUrls: ['./main-wrapper.component.scss'],
 })
-export class MainWrapperComponent implements OnInit, OnChanges {
+export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   questions: Array<Question>;
   @Input({ transform: booleanAttribute }) angular = false;
   evidence: Evidence;
@@ -55,92 +66,394 @@ export class MainWrapperComponent implements OnInit, OnChanges {
   dialogRef: any;
   isExpired: boolean;
   @Input() saveQuestioner: boolean = false;
+  subscription: Subscription;
+  isOnline: boolean = true;
+  stateData: any;
+  submissionId:any;
+  evidenceCode:any;
+  solutionType :any;
+  uploading:boolean= false;
+  totalFileToUpload:any = 0;
+  currentFileUploaded = 0;
 
   constructor(
     public fb: FormBuilder,
     private dialog: MatDialog,
     public questionnaireService: QuestionnaireService,
-    public apiService:ApiService,
-    public toaster:ToastService,
-    public location:Location
-  ) {}
+    public apiService: ApiService,
+    public toaster: ToastService,
+    public location: Location,
+    private renderer: Renderer2, private el: ElementRef,
+    public router: Router,
+    private sharedService: SharedService,
+    private queryParamsService: QueryParamsService,
+    private db: DbService,
+    private attachmentService: AttachmentService,
+    private http: HttpClient,
 
-  checkFormValidity(){
+  ) {
+    // super(router, location);
+  }
+
+  checkFormValidity() {
     window.parent.postMessage({
       type: 'formDirty',
       isDirty: this.questionnaireForm.dirty
     }, '*');
   }
 
-  ngOnChanges(changes: SimpleChanges): void {
+  async ngOnChanges(changes: SimpleChanges) {
     if (
       this.angular &&
       changes['apiConfig'] &&
       changes['apiConfig'].previousValue == undefined &&
       changes['apiConfig'].currentValue
     ) {
+      this.setApiService();
+      let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
+      if (!isDataInlocalSotrage) {
         this.setApiService();
-        this.fetchDetails();
+        this.apiService.stateData ? this.getQuestions(this.apiService.stateData) : this.fetchDetails();
       }
 
-      if (changes['saveQuestioner'] && this.saveQuestioner) {
+      if (this.sections?.length == 1) {
+        this.setSection(this.sections[0].name);
+        if (document.getElementById('observation-ion-toolbar')) {
+          document.getElementById('observation-ion-toolbar').style.display = 'none'
+        }
+        this.listing = false;
+      }
+    }
+
+    if (changes['saveQuestioner']) {
+      if (this.saveQuestioner == true) {
         this.submission('draft');
       }
+    }
   }
 
-  setApiService(){
-    this.apiService.baseUrl = this.apiConfig.baseURL;
-    this.apiService.token = this.apiConfig.userAuthToken;
-    this.apiService.solutionType = this.apiConfig.solutionType;
-  }
-  
-  fetchDetails(){
-    this.apiService.post(`${urlConfig[this.apiConfig.solutionType].details}`+this.apiConfig.solutionId,{})
-    .pipe(
-      catchError((err) => {
-        throw new Error('Could not fetch the details');
-      })
-    )
-    .subscribe((res:any) => {
-      if(res.result){
-        this.assessment = this.questionnaireService.mapSubmissionToAssessment(
-          res.result
-        );
-        this.evidence = this.assessment.assessment.evidences[0];
-        this.evidence.startTime = Date.now();
-        this.endDate = new Date(
-          new Date(this.assessment.assessment.endDate).getTime() +
-            new Date(this.assessment.assessment.endDate).getTimezoneOffset() *
-              60000
-        );
-        this.isExpired = this.assessment.assessment.status == 'expired';
-        this.sections = this.evidence.sections;
-        this.loaded = true;
-      }else{
-        this.toaster.showToast('Something went wrong, Please try again later','danger',5000)
-      }
-
-  });
-}
-  ngOnInit() {
+  async ngOnInit() {
+    let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
     if (typeof this.apiConfig === 'string') {
       try {
         this.apiConfig = JSON.parse(this.apiConfig);
-        this.setApiService();
-        this.fetchDetails()
-        if(this.sections.length == 1){
-          this.setSection(this.sections[0].name);
-          this.listing = false;
+
+        if (!isDataInlocalSotrage) {
+          this.setApiService();
+          this.apiService.stateData ? this.getQuestions(this.apiService.stateData) : this.fetchDetails();
         }
+
       } catch (error) {
         throw new Error('Invalid Assessment Structure', error);
       }
     }
+
+    if (this.sections?.length == 1) {
+      this.setSection(this.sections[0].name);
+      if (document.getElementById('observation-ion-toolbar')) {
+        document.getElementById('observation-ion-toolbar').style.display = 'none'
+      }
+      this.listing = false;
+    }
     this.questionnaireForm = this.fb.group({});
-    this.questionnaireForm.valueChanges.subscribe((data:any) =>{
+
+    this.questionnaireForm.valueChanges.subscribe((data: any) => {
       this.checkFormValidity();
     })
+
+    this.attachmentService.trigger$.subscribe(() => {
+      const evidenceData = this.questionnaireService.getEvidenceData(
+        this.evidence,
+        this.questionnaireForm.value
+      );
+
+      evidenceData['status'] = 'draft';
+      const submissionData = {
+        status: "draft",
+        ...evidenceData,
+      };
+      this.updateDataInIndexDb(submissionData);
+    });
   }
+
+  async getQueryParms() {
+    this.queryParamsService.parseQueryParams();
+    this.submissionId = this.queryParamsService?.submissionId || this.submissionId || "";
+    this.evidenceCode = this.queryParamsService?.evidenceCode || this.evidenceCode;
+    // if (!submissionId || !evidenceCode) {
+    //   return null;
+    // }
+  
+    return {
+      indexDbKey: `${this.submissionId}`,
+      evidenceCode: `${this.evidenceCode}`
+    };
+  }
+  
+  async setDataInIndexDb(submissionId:any) {
+    const queryParamsData = await this.getQueryParms(); 
+    const indexDbKey = queryParamsData?.indexDbKey;
+
+    const data = {
+      key: submissionId ? submissionId : indexDbKey,
+      data: this.assessment
+    }
+    try {
+      await this.db.addData(data);
+    } catch (error) {
+      console.error("Failed to store data in IndexedDB", error);
+    }
+  }
+
+  getProgressStatus(submission: any): number {
+    if (!submission || !submission.answers) return 0;
+  
+    const answersObj = submission.answers;
+    
+    let totalQuestions = 0;
+    let answeredCount = 0;
+  
+    for (const qid of Object.keys(answersObj)) {
+      const answer = answersObj[qid];
+      const visibleIf = answer.visibleIf;
+     
+      if (Array.isArray(visibleIf) && visibleIf.length > 0) {
+        let isVisible = false;
+  
+        for (const condition of visibleIf) {
+          const targetQid = condition._id;
+          const targetValue = condition.value?.[0];
+          const operator = condition.operator;
+  
+          const targetAnswer = answersObj[targetQid];
+  
+          if (!targetAnswer || targetAnswer.value === undefined || targetAnswer.value === null) {
+            isVisible = false;
+            break; 
+          }
+  
+          const actualValue = targetAnswer.value;
+
+          if (operator === '===' && actualValue === targetValue) {
+            isVisible = true;
+          } else {
+            isVisible = false;
+          }
+        }
+  
+        if (!isVisible) continue; 
+      }
+  
+      totalQuestions++;
+  
+      const value = answer.value;
+  
+      const isAnswered =
+        value !== undefined &&
+        value !== null &&
+        (
+          Array.isArray(value)
+            ? value.some((v: any) =>
+                typeof v === 'string' ? v.trim() !== '' : v !== null && v !== undefined
+              )
+            : value.toString().trim() !== ''
+        );
+  
+      if (isAnswered) {
+        answeredCount++;
+      }
+    }
+  
+    if (totalQuestions === 0) return 0;
+  
+    return Math.round((answeredCount / totalQuestions) * 100);
+  }
+  
+async updateDataInIndexDb(updatedAnswers) {
+  const queryParamsData = await this.getQueryParms(); 
+  const indexDbKey = queryParamsData?.indexDbKey;
+  const evidenceCode = queryParamsData?.evidenceCode;
+  if (!indexDbKey || indexDbKey === 'undefined') {
+    return false;
+  }
+
+  const assessmentClone = JSON.parse(JSON.stringify(this.assessment)); 
+  const submissions = assessmentClone.assessment.submissions;
+  const evidences = assessmentClone.assessment.evidences;
+  const evidenceIndex = +this.apiConfig.index;
+
+
+  if (!submissions[evidenceCode]) {
+    submissions[evidenceCode] = {
+      externalId: evidenceCode,
+      answers: {},
+      startTime: Date.now(),
+      endTime: this.endDate,
+      gpsLocation: null,
+      submittedBy: '',
+      submittedByName: '',
+      submissionDate: new Date().toISOString(),
+      isValid: true,
+      status: 'draft',
+      progressStatus: 'notStarted',
+      completePercentage: 0
+    };
+  }
+
+
+  submissions[evidenceCode].answers = { ...updatedAnswers?.answers }; // ensure fresh reference
+  submissions[evidenceCode].status = updatedAnswers?.status === 'save'
+    ? 'save'
+    : updatedAnswers?.status === 'draft'
+      ? 'draft'
+      : 'submit';
+
+
+  const progress = this.getProgressStatus(submissions[evidenceCode]);
+  let progressStatus = 'notStarted';
+  if (progress === 100) progressStatus = 'completed';
+  else if (progress > 0) progressStatus = 'inProgress';
+
+
+  evidences[evidenceIndex].completePercentage = progress;
+  evidences[evidenceIndex].progressStatus = progressStatus;
+  evidences[evidenceIndex].isSubmitted = ['save', 'submit'].includes(submissions[evidenceCode].status);
+
+  
+  const data = {
+    key: indexDbKey,
+    data: assessmentClone
+  };
+
+  try {
+    await this.db.updateData(data);
+    this.assessment = assessmentClone;
+
+    return true;
+  } catch (error) {
+    console.error("❌ Failed to store data in IndexedDB", error);
+    return false;
+  }
+}
+
+
+  
+
+
+  async deleteFromIndexDb() {
+    const queryParamsData = await this.getQueryParms(); 
+    const indexDbKey = queryParamsData?.indexDbKey;
+    this.db.deleteData(indexDbKey);
+  }
+
+
+  async checkAndMapIndexDbDataToVariables() {
+    const queryParamsData = await this.getQueryParms(); 
+    const indexDbKey = queryParamsData?.indexDbKey;
+    let indexdbData = await this.db.getData(indexDbKey);
+    let currentObservation = indexdbData?.data;
+    if (this.solutionType === "survey") {
+      const submissions = currentObservation?.assessment?.submissions;
+      if (submissions && typeof submissions === 'object') {
+        this.evidenceCode = Object.keys(submissions)[0];
+      }
+    }
+    if (currentObservation) {
+      this.assessment = this.questionnaireService.mapSubmissionToAssessment(
+        currentObservation
+      );
+      this.evidence = this.solutionType == 'observation' ? currentObservation?.assessment?.evidences[+[this.apiConfig.index]] : currentObservation?.assessment?.evidences[0];
+      this.evidence.startTime = Date.now();
+      this.endDate = new Date(
+        new Date(currentObservation?.assessment?.endDate).getTime() +
+        new Date(currentObservation?.assessment?.endDate).getTimezoneOffset() *
+        60000
+      );
+      this.isExpired = currentObservation?.assessment?.status == 'expired' || false;
+      this.sections = this.evidence?.sections;
+      if (this.sections?.length == 1) {
+        this.setSection(this.sections[0].name);
+        if (document.getElementById('observation-ion-toolbar')) {
+          document.getElementById('observation-ion-toolbar').style.display = 'none'
+        }
+        this.listing = false
+      }
+      this.questionnaireForm = this.fb.group({});
+
+      this.questionnaireForm.valueChanges.subscribe((data: any) => {
+        this.checkFormValidity();
+      })
+      this.loaded = true;
+
+    }
+    return currentObservation ? true : false;
+  }
+
+  setApiService() {
+    this.apiService.baseUrl = this.apiConfig.baseURL;
+    this.apiService.token = this.apiConfig.userAuthToken;
+    this.apiService.solutionType = this.apiConfig.solutionType || 'observation';
+    this.apiService.observationId = this.apiConfig.observationId;
+    this.apiService.entityId = this.apiConfig.entityId;
+    this.apiService.submissionNumber = this.apiConfig.submissionNumber;
+    this.apiService.evidenceCode = this.apiConfig.evidenceCode;
+    this.apiService.index = this.apiConfig.index;
+
+    this.apiService.profileData = this.apiConfig.profileData;
+    this.apiService.stateData = this.apiConfig.stateData;
+
+    this.stateData = this.apiConfig.stateData;
+    this.solutionType = this.apiConfig.solutionType || 'observation';
+
+  }
+
+  fetchDetails() {
+    const path = this.solutionType == 'observation' ? this.apiConfig.observationId + `?entityId=${this.apiConfig.entityId}&submissionNumber=${this.apiConfig.submissionNumber}&evidenceCode=${this.apiConfig.evidenceCode}` : this.apiConfig.solutionId
+    this.subscription = this.apiService.post(`${urlConfig[this.solutionType].details}` + path, this.apiConfig.profileData)
+      .pipe(
+        catchError((err) => {
+          throw new Error('Could not fetch the details');
+        })
+      )
+      .subscribe(async (res: any) => {
+        if(!res.result){
+          this.surveyExpired(res)
+          return ;
+        }
+        if (res.result) {
+          this.assessment = this.questionnaireService.mapSubmissionToAssessment(
+            res.result
+          );
+          this.submissionId = this.assessment.assessment.submissionId;
+            this.evidenceCode = this.assessment.assessment.evidences[0].code;
+
+
+          let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
+
+          if(!isDataInlocalSotrage){
+
+          this.setDataInIndexDb(this.submissionId);
+              
+          this.evidence = this.solutionType == 'observation' ? this.assessment?.assessment?.evidences[+[this.apiConfig.index]] : this.assessment?.assessment?.evidences[0];
+          this.evidence.startTime = Date.now();
+          this.endDate = new Date(
+            new Date(this.assessment?.assessment?.endDate).getTime() +
+            new Date(this.assessment?.assessment?.endDate).getTimezoneOffset() *
+            60000
+          );
+          this.isExpired = this.assessment?.assessment?.status == 'expired';
+          this.sections = this.evidence?.sections;
+          this.loaded = true;
+          }
+
+        } else {
+          this.toaster.showToast('Something went wrong, Please try again later', 'danger', 5000)
+        }
+
+      });
+  }
+
+
 
   getQuestionMap() {
     for (
@@ -272,8 +585,8 @@ export class MainWrapperComponent implements OnInit, OnChanges {
         (value && value.length > 0) || Number.isInteger(value)
           ? '#006600'
           : typeof validation !== 'string' && validation.required
-          ? '#A30000'
-          : '#595959',
+            ? '#A30000'
+            : '#595959',
       sectionName: this.sections[sectionIndex].name,
       pageIndex: qIndex,
       questionNumber: qNum,
@@ -290,6 +603,10 @@ export class MainWrapperComponent implements OnInit, OnChanges {
       }
     }
     this.domQuery(this.sectionName, 'block');
+    if (document.getElementById('observation-ion-toolbar')) {
+      document.getElementById('observation-ion-toolbar').style.display = 'block'
+    }
+
   }
 
   domQuery(elemendId: string, action: string) {
@@ -312,56 +629,190 @@ export class MainWrapperComponent implements OnInit, OnChanges {
     this.submitSurvey(submissionData);
   }
 
-  async submitSurvey(submissionData){
+  async submitImageToCloud(payload: any, uploadQueue: any[]): Promise<any[]> {
+    try {
+      const response: any = await firstValueFrom(
+        this.apiService.post(urlConfig.presignedUrl, payload)
+      );
+      const submissionId = Object.keys(response.result)[0]; // Use single known submissionId
+  
+      const uploadResults: any[] = [];
+  
+      for (let file of uploadQueue) {
+        const fileList = response.result[submissionId].files;
+        const presignedUrlData = fileList.find((f: any) =>
+          f.file.endsWith(file.name)
+        );
+  
+        if (!presignedUrlData) {
+          console.error(`Presigned URL not found for file: ${file.name}`);
+          continue;
+        }
+  
+        const headers = new HttpHeaders({
+          'Content-Type': 'multipart/form-data',
+          'x-ms-blob-type': 'BlockBlob',
+        });
+
+        const storedFile: any = await this.db.getData(file.name);
+         if(storedFile.data){
+          const convertedFile = this.attachmentService.base64ToFile(storedFile.data);
+              file.file = convertedFile;
+         }
+        await firstValueFrom(
+          this.http.put(presignedUrlData.url, file.file, { headers })
+        );
+  
+        file.isUploaded = true;
+        file.url = presignedUrlData.url.split('?')[0];
+        file.previewUrl = presignedUrlData.url.split('?')[0];
+        file.sourcePath = presignedUrlData.payload?.sourcePath || '';
+        this.currentFileUploaded++;
+        uploadResults.push(file);
+      }
+  
+      return uploadResults;
+  
+    } catch (err) {
+      console.error('Batch upload failed', err);
+      throw err;
+    }
+  }
+  
+  
+  
+  async submitSurvey(submissionData) {
     if (submissionData.status !== 'draft') {
-      if(!this.saveQuestioner){
+      if (!this.saveQuestioner) {
         const confirmationParams = {
           title: 'Confirmation',
-          message: `Are you sure you want to submit the ${this.apiConfig.solutionType}?`,
+          message: `Are you sure you want to submit the ${this.solutionType}?`,
           actionBtns: true,
           cancelLabel: 'Cancel',
           acceptLabel: 'Confirm',
         };
+  
         const response = await this.openAlert(confirmationParams);
-        if (!response) {
-          return;
-        }
-      }
-    }
-    this.apiService
-    .post(
-      `${urlConfig[this.apiConfig.solutionType].update}${this.assessment.assessment.submissionId}`,
-      {
-        evidence: submissionData,
-      })
-    .pipe(
-      catchError((err) => {
-        throw new Error(`Update api has failed`);
-      })
-    )
-    .subscribe(async (res: any) => {
-      if(res.status){
-        if(!this.saveQuestioner){
-          if (submissionData.status == 'draft') {
-            const confirmationParams = {
-              title: 'Success',
-              message: `Successfully your ${this.apiConfig.solutionType} has been saved. Do you want to continue?`,
-              acceptLabel: 'Later',
-              cancelLabel: 'Continue',
-              type:'success'
-            };
-            const response = await this.openAlert(confirmationParams);
-            if(response){
-              this.location.back();
+        if (!response) return;
+  
+        this.totalFileToUpload = 0;
+        this.currentFileUploaded = 0;
+  
+        const answers = submissionData?.answers;
+        const uploadQueue: any[] = [];
+  
+        // Collect all files that need uploading
+        for (let [submissionId, answerObj] of Object.entries(answers)) {
+          const files = (answerObj as any).fileName || [];
+          for (let file of files) {
+            if (!file?.isUploaded) {
+              this.totalFileToUpload++;
+              const storedFile: any = await this.db.getData(file.name);
+              if (!storedFile || !storedFile.data) {
+                this.toaster.showToast(`No stored data found for file: ${file.name}`, 'danger', 5000);
+                continue;
+              }
+              // const convertedFile = this.attachmentService.base64ToFile(storedFile.data);
+              // file.file = convertedFile;
+              file.submissionId = submissionId;
+              uploadQueue.push(file);
             }
           }
         }
-      
+  
+        this.uploading = true;
+  
+        try {
+          if (uploadQueue.length > 0) {
+            // Prepare payload for bulk upload
+            const payload = {
+              ref: 'survey',
+              request: {
+                [this.submissionId]: {
+                  files: uploadQueue.map(file => file.name)
+                }
+              }
+            };
+  
+            const uploadedFiles = await this.submitImageToCloud(payload, uploadQueue);
+  
+            for (let i = 0; i < uploadQueue.length; i++) {
+              const file = uploadQueue[i];
+              const presignedUrlData = uploadedFiles[i];
+  
+              file.isUploaded = true;
+              // file.previewUrl = presignedUrlData.url.split('?')[0];
+              file.url = presignedUrlData.url.split('?')[0];
+              file.sourcePath = presignedUrlData.sourcePath;
+              // file.file = '';
+  
+              this.currentFileUploaded++;
+            }
+  
+            await this.updateDataInIndexDb(submissionData);
+          }
+        } catch (uploadErr) {
+          console.error('Batch upload failed:', uploadErr);
+          this.toaster.showToast(`Failed to upload files`, 'danger', 5000);
+          this.uploading = false;
+          return;
+        } finally {
+          this.uploading = false;
+        }
       }
-     
-    });
+  
+      const responseFromUpdateDataFunction = await this.updateDataInIndexDb(submissionData);
+      if (responseFromUpdateDataFunction) {
+        this.apiService
+          .post(
+            `${urlConfig[this.solutionType].update}${this.assessment.assessment.submissionId}`,
+            { evidence: submissionData }
+          )
+          .pipe(
+            catchError((err) => {
+              this.toaster.showToast(err?.error?.message, 'danger', 5000);
+              throw new Error('Update API has failed');
+            })
+          )
+          .subscribe((res: any) => {
+            if (res.status === 200 && !this.saveQuestioner) {
+              this.formIsNotDirty();
+              const footer = this.el.nativeElement.querySelector('.footer-buttons');
+              this.renderer.setStyle(footer, 'display', 'none');
+              this.toaster.showToast(
+                `Your ${this.solutionType} has been submitted successfully.`,
+                'success',
+                5000
+              );
+              this.evidence.isSubmitted = true;
+            }
+          });
+      }
+    } else {
+      const responseFromUpdateDataFunction = await this.updateDataInIndexDb(submissionData);
+      if (responseFromUpdateDataFunction && !this.saveQuestioner) {
+        this.formIsNotDirty();
+        const confirmationParams = {
+          title: 'Success',
+          message: `Successfully your ${this.solutionType} has been saved. Do you want to continue?`,
+          acceptLabel: 'Later',
+          cancelLabel: 'Continue',
+          type: 'success',
+        };
+        const response = await this.openAlert(confirmationParams);
+        if (response) {
+          if (this.sections?.length > 1) {
+            this.backToSectionListing();
+          } else {
+            this.location.back();
+          }
+        }
+      }
+    }
   }
-
+  
+  
+  
   async openAlert(alertDialogConfig) {
     const dialogRef = await this.dialog.open(AlertComponent, {
       data: alertDialogConfig,
@@ -371,7 +822,7 @@ export class MainWrapperComponent implements OnInit, OnChanges {
       disableClose: true
     });
 
-     this.dialogRef = dialogRef
+    this.dialogRef = dialogRef
 
     return new Observable<boolean>((observer) => {
       dialogRef.afterClosed().subscribe((res) => {
@@ -387,7 +838,10 @@ export class MainWrapperComponent implements OnInit, OnChanges {
   setSection(name: string) {
     this.sectionName = name;
     this.enableRelevantPage();
-    this.mainComponent.enableRelevantPage();
+    if (document.getElementById('observation-ion-toolbar')) {
+      document.getElementById('observation-ion-toolbar').style.display = 'none'
+    }
+    this.mainComponent?.enableRelevantPage();
     let sectionElements = document.getElementsByClassName('section-listing');
     if (sectionElements.length > 0) {
       for (let i = 0; i < sectionElements.length; i++) {
@@ -400,13 +854,19 @@ export class MainWrapperComponent implements OnInit, OnChanges {
   backToSectionListing() {
     this.listing = false;
     this.domQuery(this.sectionName, 'none');
+    if (document.getElementById('observation-ion-toolbar')) {
+      document.getElementById('observation-ion-toolbar').style.display = 'block'
+    }
     let sectionElements = document.getElementsByClassName('section-listing');
     this.mainComponent.pageIndex = 0;
-    this.mainComponent.handlePageEvent({pageIndex:0})
+    this.mainComponent.handlePageEvent({ pageIndex: 0 })
     if (sectionElements.length > 0) {
       for (let i = 0; i < sectionElements.length; i++) {
         (sectionElements[i] as HTMLElement).style.display = 'block';
       }
+    }
+    if (this.sections.length == 1) {
+      this.location.back();
     }
   }
 
@@ -414,10 +874,95 @@ export class MainWrapperComponent implements OnInit, OnChanges {
     this.dialog.closeAll();
   }
 
-  goToQuestion(id, pageIndex,sectionName) {
+  goToQuestion(id, pageIndex, sectionName) {
     this.setSection(sectionName)
     this.mainComponent.pageIndex = pageIndex;
-    this.mainComponent.handlePageEvent({pageIndex:pageIndex})
+    this.mainComponent.handlePageEvent({ pageIndex: pageIndex })
     this.closeModal();
   }
+
+  formIsNotDirty() {
+    window.parent.postMessage({
+      type: 'formDirty',
+      isDirty: false
+    }, '*');
+  }
+
+  ngOnDestroy(): void {
+    this.toaster.clearToaster()
+    if (this.solutionType == 'observation' && this.questionnaireForm.dirty) {
+      this.saveQuestioner = true;
+      if(!this.assessment.assessment.evidences[0].isSubmitted){
+        this.submission('draft');
+      }
+      this.subscription?.unsubscribe();
+      this.sharedService.updateValue(false);
+      this.questionnaireForm.reset();
+      if (document.getElementById('observation-ion-toolbar')) {
+        document.getElementById('observation-ion-toolbar').style.display = 'block';
+      }
+    }
+  }
+  
+  async start() {
+    console.log("stat inqa",this.stateData)
+    const { observationAsTask, isATargetedSolution } = this.stateData || {};
+    console.log("ob",observationAsTask,isATargetedSolution)
+
+    if (observationAsTask || isATargetedSolution) {
+      const message = { type: 'START', data: this.stateData };
+      window.postMessage(message, '*');
+    } else {
+      this.toaster.showToast(
+        'Dear User, this Observation is not relevant for your subrole and location',
+        'danger',
+        5000
+      );
+    }
+  }
+
+  async getQuestions(data) {
+
+    if (data?.isATargetedSolution === false) {
+
+      this.toaster.showToast('Dear User, this Observation is not relevant for your subrole and location', 'danger', 5000)
+
+    }
+
+    this.assessment = this.questionnaireService.mapSubmissionToAssessment(
+
+      data
+
+    );
+
+    this.submissionId = this.assessment.assessment.submissionId;
+    this.evidenceCode = this.assessment.assessment.evidences[0].code;
+    this.apiConfig.index = 0;
+
+    let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
+
+    if(!isDataInlocalSotrage){
+
+    this.setDataInIndexDb(this.submissionId);
+        
+    this.evidence = this.solutionType == 'observation' ? this.assessment?.assessment?.evidences[+[this.apiConfig.index]] : this.assessment?.assessment?.evidences[0];
+    
+    this.evidence.startTime = Date.now();
+    this.endDate = new Date(
+      new Date(this.assessment?.assessment?.endDate).getTime() +
+      new Date(this.assessment?.assessment?.endDate).getTimezoneOffset() *
+      60000
+    );
+    this.isExpired = this.assessment?.assessment?.status == 'expired';
+    this.sections = this.evidence?.sections;
+    this.loaded = true;
+    }
+
+  }
+
+  surveyExpired(data){
+    const message = { type: 'EXPIRED', data: data };
+    window.postMessage(message, '*');
+  }
+
 }

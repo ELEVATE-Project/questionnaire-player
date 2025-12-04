@@ -1,12 +1,14 @@
 <div *ngIf="loaded" class="wrapper">
-  <form [formGroup]="questionnaireForm" class="main custom-font">
+  <form [formGroup]="questionnaireForm" class="main custom-font" *ngIf="!uploading;else uplodingModal" [ngStyle]="{
+    'pointer-events': stateData && stateData?.isSurvey === false ? 'none' : 'auto',
+    opacity: stateData && stateData?.isSurvey === false ? 0.6 : 1
+  }">
     <div *ngIf="!listing && sections?.length != 1" style="color: var(--primary-color);">
-      <h1 style="margin-left: 1.5rem;">List of Sections</h1>
+      <h1  class="sesion-title">List of Sections</h1>
       <hr style="height: 1px;background:var(--primary-color);"/>
     </div>
-    <!-- <div *ngIf="listing" (click)="backToSectionListing()" class="d-flex flex-ai-center m-20 flex-gap-10" style="color: var(--primary-color);">
-      <mat-icon>arrow_back</mat-icon>
-      <span>Section Listing</span>
+    <!-- <div *ngIf="listing && sections?.length" (click)="backToSectionListing()" class="d-flex flex-gap-10 header-shadow">
+      <mat-icon class="m-10 ml-16" style="font-size: x-large;">arrow_back</mat-icon>
     </div> -->
     <div *ngFor="let section of sections; let secId = index">
       <div class="section-listing" [ngStyle]="{display:sections.length == 1 ? 'none':'block'}">
@@ -14,30 +16,70 @@
           <mat-card-title>{{secId+1}}. {{section.name}}</mat-card-title>
         </mat-card>
       </div>
-        <span [id]="section.name" [ngStyle]="{display:sections.length == 1 ? 'block':'none'}">
+      <span [id]="section.name" [ngStyle]="{
+        display: sections.length == 1 ? 'block' : 'none',
+        'pointer-events': stateData && stateData?.isSurvey === false ? 'none' : 'auto',
+        opacity: stateData && stateData?.isSurvey === false ? 0.6 : 1
+      }">
           <lib-main #mainComponent  [questions]="section.questions" [questionnaireForm]="questionnaireForm"
           [isSubmitted]="evidence?.isSubmitted" [isExpired]="isExpired" [fileSizeLimit]="apiConfig.fileSizeLimit"
           ></lib-main>
         </span>
     </div>
   </form>
-  <span class="sticky-footer">
+  <ng-container *ngIf="!uploading">
+  <ng-container *ngIf="sections?.length > 1;else showAllButtons">
+  <div class="sticky-footer" [ngClass]="{'bg-white': !listing}">
     <hr class="partition" />
+    <div class="footer-buttons">
     <div *ngIf="!evidence?.isSubmitted && !isExpired"
-      
-      class="m-16 d-flex flex-ai-center flex-jc-space-around flex-dr flex-gap-30"
-    >
-      <button class="btn btn-outline-secondary" (click)="submission('draft')" >
-        Save
-      </button>
-  
-        <mat-icon tabindex="0" (keydown)="($event.key == 'Enter' || $event.key == ' ') && getQuestionMap()" (click)="getQuestionMap()" matTooltip="Question Map" style="height: auto;width: auto;color: var(--primary-color);font-size: 40px;">map</mat-icon>
-  
-      <button class="btn btn-primary" (click)="!questionnaireForm?.valid ? getQuestionMap() : submission('submit')">
+      class="m-16 d-flex flex-ai-center flex-jc-space-between flex-dr flex-gap-30">
+      <div>
+        <mat-icon tabindex="0" (keydown)="($event.key == 'Enter' || $event.key == ' ') && getQuestionMap()" (click)="getQuestionMap()" matTooltip="Question Map" style="height: auto;width: auto;color: var(--primary-color);font-size: 40px;margin-left: 15px;">map</mat-icon>
+        <p class="question-map">Question Map</p>
+      </div>
+      <div class="d-flex flex-jc-space-between">
+        <button class="btn btn-primary mr-2" (click)="start()" *ngIf="(!listing && sections?.length > 1) && (stateData && stateData?.isSurvey === false)">
+          Start
+        </button>
+        <button class="btn btn-outline-secondary" (click)="submission('draft')" *ngIf="listing && (stateData && stateData?.isSurvey === true)">
+          Save
+        </button>
+        <button class="btn btn-primary" (click)="!questionnaireForm?.valid ? getQuestionMap() : submission('submit')" *ngIf="(!listing && sections?.length > 1) && (stateData && stateData?.isSurvey === true)">
         Submit
-      </button>
+        </button>
+      </div>
     </div>
-  </span>
+  </div>
+</div>
+</ng-container>
+</ng-container>
+
+<ng-template #showAllButtons>
+  <div class="sticky-footer">
+    <hr class="partition" />
+    <div class="footer-buttons">
+    <div *ngIf="!evidence?.isSubmitted && !isExpired"
+      class="m-16 d-flex flex-ai-center flex-jc-space-between flex-dr flex-gap-30">
+      <div>
+        <mat-icon tabindex="0" (keydown)="($event.key == 'Enter' || $event.key == ' ') && getQuestionMap()" (click)="getQuestionMap()" matTooltip="Question Map" style="height: auto;width: auto;color: var(--primary-color);font-size: 40px; margin-left: 15px;">map</mat-icon>
+        <p class="question-map">Question Map</p>
+      </div>
+    <div>
+      <button class="btn btn-primary mr-2" (click)="start()" *ngIf="stateData && stateData?.isSurvey === false">
+        Start
+      </button>
+        <button class="btn btn-outline-secondary" (click)="submission('draft')" *ngIf="(stateData && stateData?.isSurvey === true) || !stateData">
+          Save
+        </button>
+        <button class="btn btn-primary mr-2"  (click)="!questionnaireForm?.valid ? getQuestionMap() : submission('submit')" *ngIf="(stateData && stateData?.isSurvey === true) || !stateData">
+          Submit
+        </button>
+    </div>
+    </div>
+    </div>
+  </div>
+</ng-template>
 
 </div>
 <div class="spinner-overlay" *ngIf="!loaded">
@@ -83,6 +125,21 @@
       <button class="btn btn-primary" type="button" (click)="closeModal()">
         Close
       </button>
+    </div>
+  </div>
+</ng-template>
+
+<ng-template #uplodingModal>
+  <div class="uploading-content">
+    <div class="upload-screen">
+      <div class="upload-body">
+        <mat-icon class="cloud-icon">cloud_upload</mat-icon>
+        <div class="upload-text">
+          <p class="uploading">Uploading</p>
+          <p class="progress">{{ currentFileUploaded }} Of {{totalFileToUpload}} Evidences.</p>
+          <p class="note">Please don't close the app or go back.</p>
+        </div>
+      </div>
     </div>
   </div>
 </ng-template>
