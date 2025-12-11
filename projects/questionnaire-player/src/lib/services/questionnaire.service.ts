@@ -73,14 +73,14 @@ export class QuestionnaireService {
     const assessment = data.assessment;
 
     for (const evidence of assessment.evidences) {
-      const validSubmission = assessment.submissions[evidence.externalId];
+      const validSubmission = assessment.submissions[evidence?.externalId];
       if (validSubmission) {
         evidence.notApplicable = validSubmission.notApplicable;
-        if (evidence.notApplicable) {
+        if (evidence?.notApplicable) {
           continue;
         }
 
-        for (const section of evidence.sections) {
+        for (const section of evidence?.sections) {
           for (const question of section.questions) {
             if (question.responseType === 'pageQuestions') {
               for (const questions of question.pageQuestions) {
@@ -90,7 +90,7 @@ export class QuestionnaireService {
                     : this.constructMatrixValue(
                         validSubmission,
                         questions,
-                        evidence.externalId
+                        evidence?.externalId
                       );
                 questions.remarks = validSubmission.answers[questions._id]
                   ? validSubmission.answers[questions._id].remarks
@@ -112,7 +112,7 @@ export class QuestionnaireService {
                   : this.constructMatrixValue(
                       validSubmission,
                       question,
-                      evidence.externalId
+                      evidence?.externalId
                     );
               question.remarks = validSubmission.answers[question._id]
                 ? validSubmission.answers[question._id].remarks
@@ -179,13 +179,15 @@ export class QuestionnaireService {
   }
 
   getEvidenceData(evidence: Evidence, formValues: object) {
-    let sections = evidence.sections;
+    let sections = evidence?.sections;
+    
     let answers = this.getSectionData(sections, formValues);
     let payloadData = {
-      externalId: evidence.externalId,
+      externalId: evidence?.externalId,
       answers: answers,
-      startTime: evidence.startTime,
+      startTime: evidence?.startTime,
       endTime: Date.now(),
+      isSubmitted: evidence?.isSubmitted
     };
     return payloadData;
   }
@@ -230,28 +232,37 @@ export class QuestionnaireService {
 
   formatToPayload(currentQuestion, formValues) {
     let value, labels;
-    if (currentQuestion.responseType == 'matrix') {
-      value = !currentQuestion.value.length ? [] : formValues[currentQuestion._id];
-      labels = currentQuestion.value;
+  
+    if (currentQuestion.responseType === 'matrix') {
+      value = !currentQuestion.value?.length
+        ? []
+        : formValues[currentQuestion._id];
+      labels = currentQuestion.value || [];
     } else {
       value = formValues[currentQuestion._id];
       labels = formValues[currentQuestion._id];
-      if (currentQuestion.responseType == 'radio' && currentQuestion.value) {
-        labels = currentQuestion.options.find(
-          (_) => _.value == currentQuestion.value
-        ).label;
+  
+      if (currentQuestion.responseType === 'radio' && currentQuestion.value) {
+        const selectedOption = currentQuestion.options.find(
+          (_) => _.value === currentQuestion.value
+        );
+        labels = selectedOption ? selectedOption.label : '';
       }
-      if (
-        currentQuestion.responseType == 'multiselect' &&
-        currentQuestion.value
-      ) {
+  
+      if (currentQuestion.responseType === 'multiselect') {
+        const selectedValues = Array.isArray(currentQuestion.value)
+          ? currentQuestion.value
+          : currentQuestion.value
+          ? [currentQuestion.value]
+          : [];
+  
         labels = currentQuestion.options
-          .filter((_) => currentQuestion.value.includes(_.value))
-          .map((_) => _.label);
+          .filter((opt) => selectedValues.includes(opt.value))
+          .map((opt) => opt.label);
       }
     }
-
-    return {
+  
+    let payloadItem = {
       qid: currentQuestion._id,
       value: value,
       remarks: currentQuestion.remarks,
@@ -259,7 +270,7 @@ export class QuestionnaireService {
       gpsLocation: '',
       payload: {
         question: currentQuestion.question,
-        labels: this.convertToArray(labels),
+        labels: this.convertToArray(labels), // always returns array
         responseType: currentQuestion.responseType,
         filesNotUploaded: [], //todo
       },
@@ -271,7 +282,21 @@ export class QuestionnaireService {
       visibleIf: currentQuestion.visibleIf,
       rubricLevel: '',
     };
+  
+    // 🔹 Flatten extra nested "value" if it’s an object with a "value" key
+    while (
+      payloadItem?.value &&
+      typeof payloadItem.value === 'object' &&
+      !Array.isArray(payloadItem.value) &&
+      'value' in payloadItem.value
+    ) {
+      payloadItem.value = payloadItem.value.value;
+    }
+  
+    return payloadItem;
   }
+  
+  
 
   convertToArray(arr) {
     if (!arr) {

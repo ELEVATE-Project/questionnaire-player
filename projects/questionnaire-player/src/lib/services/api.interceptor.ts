@@ -42,11 +42,11 @@ export class ApiInterceptor implements HttpInterceptor {
   }
 
   intercept(request: HttpRequest<any>, next: HttpHandler): Observable<HttpEvent<any>> {
-    if (!this.onlineStatus) {
-      this.offline = true;
-      this.toaster.showToast('You are offline. Please connect to a network.', 'danger');
-      return of();
-    }
+    // if (!this.onlineStatus) {
+    //   this.offline = true;
+    //   this.toaster.showToast('You are offline. Please connect to a network.', 'danger');
+    //   return of();
+    // }
 
     this.offline = false;
 
@@ -76,14 +76,14 @@ export class ApiInterceptor implements HttpInterceptor {
     if (!token) {
       return null;
     }
-    // const isValidToken = await this.utilService.validateToken(token);
-    // if (!isValidToken) {
-    //   const data = await this.apiService.getAccessToken();
-    //   if (data) {
-    //     localStorage.setItem('accToken', data);
-    //     return data;
-    //   }
-    // }
+    const isValidToken = await this.utilService.validateToken(token);
+    if (!isValidToken) {
+      const data = await this.apiService.getAccessToken();
+      if (data) {
+        localStorage.setItem('accToken', data);
+        return data;
+      }
+    }
     return token;
   }
 
