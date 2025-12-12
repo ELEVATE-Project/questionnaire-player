@@ -24,10 +24,17 @@ export class CheckboxInputComponent implements OnInit {
   ngOnInit() {
     this.hintCloseText = 'Close';
     setTimeout(() => {
+      // Ensure question.value is an array
+      const questionValue = Array.isArray(this.question.value) 
+        ? this.question.value 
+        : this.question.value 
+          ? [this.question.value] 
+          : [];
+      
       const optionControl = this.options.map((v) => {
         if (
-          this.question.value &&
-          (this.question.value as Array<string>).find((_v) => _v == v.value)
+          questionValue &&
+          questionValue.find((_v) => _v == v.value)
         ) {
           return new FormControl(v.value);
         }
@@ -42,7 +49,7 @@ export class CheckboxInputComponent implements OnInit {
       this.question.startTime = this.question.startTime
         ? this.question.startTime
         : Date.now();
-      if (this.question.value.length) {
+      if (questionValue.length) {
         if (this.question.children.length) {
           this.dependentParent.emit(this.question);
         }

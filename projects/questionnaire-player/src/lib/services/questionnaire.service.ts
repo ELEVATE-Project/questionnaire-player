@@ -84,23 +84,28 @@ export class QuestionnaireService {
           for (const question of section.questions) {
             if (question.responseType === 'pageQuestions') {
               for (const questions of question.pageQuestions) {
-                questions.value =
-                  questions.responseType !== 'matrix'
-                    ? validSubmission.answers[questions._id].value
-                    : this.constructMatrixValue(
-                        validSubmission,
-                        questions,
-                        evidence?.externalId
-                      );
-                questions.remarks = validSubmission.answers[questions._id]
-                  ? validSubmission.answers[questions._id].remarks
-                  : '';
-                questions.fileName = validSubmission.answers[questions._id]
-                  ? validSubmission.answers[questions._id].fileName
-                  : [];
-                questions.endTime = validSubmission.answers[questions._id]
-                  ? validSubmission.answers[questions._id].endTime
-                  : '';
+                if (
+                  validSubmission.answers &&
+                  validSubmission.answers[questions._id]
+                ) {
+                  questions.value =
+                    questions.responseType !== 'matrix'
+                      ? validSubmission.answers[questions._id].value
+                      : this.constructMatrixValue(
+                          validSubmission,
+                          questions,
+                          evidence?.externalId
+                        );
+                  questions.remarks = validSubmission.answers[questions._id]
+                    ? validSubmission.answers[questions._id].remarks
+                    : '';
+                  questions.fileName = validSubmission.answers[questions._id]
+                    ? validSubmission.answers[questions._id].fileName
+                    : [];
+                  questions.endTime = validSubmission.answers[questions._id]
+                    ? validSubmission.answers[questions._id].endTime
+                    : '';
+                }
               }
             } else if (
               validSubmission.answers &&

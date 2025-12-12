@@ -12,6 +12,7 @@ import {
   booleanAttribute,
 } from '@angular/core';
 import {
+  ApiConfiguration,
   Evidence,
   Question,
   Section,
@@ -35,7 +36,6 @@ import { DbService } from '../../services/db/db.service';
 import { AttachmentService } from '../../services/attachment/attachment.service';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { debounceTime, distinctUntilChanged } from 'rxjs/operators';
-import { sections } from '../../constants/mockData.json';
 
 @Component({
   selector: 'lib-main-wrapper',
@@ -48,8 +48,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   evidence: Evidence;
   sections: Section[];
   questionnaireForm: FormGroup;
-
-  @Input() apiConfig: any;
+  @Input() apiConfig: ApiConfiguration;
   @Input() apiconfig: any;
   @ViewChild('questionMapModal') public questionMapModal: TemplateRef<any>;
   @ViewChild('sectionTabs') public sectionTabs: any;
@@ -121,11 +120,12 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     ) {
       this.setApiService();
       let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
-      if (!isDataInlocalSotrage) {
+      if(this.apiConfig.mockData) {
+        this.setValue(this.apiConfig.mockData)
+      } else if (!isDataInlocalSotrage) {
         this.setApiService();
         initialResponse = this.apiService.stateData ? await this.getQuestions(this.apiService.stateData) : await this.fetchDetails();
       }
-
 
       setTimeout(async () => {
         if (Array.isArray(this.sections) && this.sections.length > 0) {
@@ -153,12 +153,12 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       try {
         let data = this.apiConfig || this.apiconfig || '{}';
         this.apiConfig = JSON.parse(data);
-
-        if (!isDataInlocalSotrage) {
+        if(this.apiConfig.mockData) {
+          this.setValue(this.apiConfig.mockData)
+        } else if (!isDataInlocalSotrage) {
           this.setApiService();
           this.apiService.stateData ? this.getQuestions(this.apiService.stateData) : this.fetchDetails();
         }
-
       } catch (error) {
         throw new Error('Invalid Assessment Structure', error);
       }
@@ -466,44 +466,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
 
         if (res.result) {
-          this.loaded = true;
-          this.assessment = this.questionnaireService.mapSubmissionToAssessment(
-            {
-              ...res.result,
-              assessment: {
-                ...res.result.assessment,
-                evidences: [
-                  {
-                    ...res.result.assessment.evidences[0],
-                    sections: sections,
-                  },
-                ],
-              },
-            }
-          );
-          this.submissionId = this.assessment.assessment.submissionId;
-          this.evidenceCode = this.assessment.assessment.evidences[0].code;
-
-
-          let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
-          this.enableDisableStartBtn(this.assessment.assessment.evidences[0]);
-          if (!isDataInlocalSotrage) {
-
-            this.setDataInIndexDb(this.submissionId);
-
-            this.evidence = this.solutionType == 'observation' ? this.assessment?.assessment?.evidences[+[this.apiConfig.index]] : this.assessment?.assessment?.evidences[0];
-            this.evidence.startTime = Date.now();
-            this.endDate = new Date(
-              new Date(this.assessment?.assessment?.endDate).getTime() +
-              new Date(this.assessment?.assessment?.endDate).getTimezoneOffset() *
-              60000
-            );
-            this.isExpired = this.assessment?.assessment?.status == 'expired';
-            this.sections = this.evidence?.sections;
-            this.loaded = true;
-
-          }
-
+          this.setValue(res.result);
         } else {
           this.toaster.showToast('Something went wrong, Please try again later', 'danger', 5000)
         }
@@ -511,7 +474,28 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       });
   }
 
-
+  async setValue(data: any) {
+    this.assessment = this.questionnaireService.mapSubmissionToAssessment(data);
+    this.submissionId = this.assessment.assessment.submissionId;
+    this.evidenceCode = this.assessment.assessment.evidences[0].code;
+    let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
+    this.enableDisableStartBtn(this.assessment.assessment.evidences[0]);
+    if (!isDataInlocalSotrage) {
+      this.setDataInIndexDb(this.submissionId);
+      this.evidence = this.solutionType == 'observation' ? this.assessment?.assessment?.evidences[+[this.apiConfig.index]] : this.assessment?.assessment?.evidences[0];
+      this.evidence.startTime = Date.now();
+      this.endDate = new Date(
+        new Date(this.assessment?.assessment?.endDate).getTime() +
+        new Date(this.assessment?.assessment?.endDate).getTimezoneOffset() *
+        60000
+      );
+      this.isExpired = this.assessment?.assessment?.status == 'expired';
+      this.sections = this.evidence?.sections;
+      this.loaded = true;
+    } else {
+      this.loaded = true;
+    }
+  }
 
   getQuestionMap() {
     // Reset questionMap and pageMsg to prevent duplicates on multiple renders
