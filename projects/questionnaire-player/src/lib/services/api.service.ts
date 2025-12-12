@@ -36,6 +36,10 @@ export class ApiService {
     return this.http.put<T>(this.baseUrl+url, body, { headers });
   }
 
+  getWithFullURL<T>(url: string, params?: HttpParams): Observable<T> {
+    return this.http.get<T>(url, { params });
+  }
+
   postWithFullURL<T>(url: string, body: any, headers?: HttpHeaders): Observable<T> {
     return this.http.post<T>(url, body, { headers });
   }

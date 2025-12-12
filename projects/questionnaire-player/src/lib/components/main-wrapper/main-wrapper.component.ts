@@ -880,7 +880,14 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
             this.evidence.isSubmitted = true;
   
             setTimeout(() => {
-              this.location.back();
+              // this.location.back();
+              window.parent.postMessage({
+                type: 'submissionSuccess',
+                data: {
+                  submissionId: this.submissionId,
+                  evidenceCode: this.evidenceCode
+                }
+              }, '*');
             }, 1000);
           } else {
             this.toaster.showToast(res?.message || 'Submission failed', 'danger', 5000);

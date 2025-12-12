@@ -35,14 +35,27 @@ export class QuestionnaireService {
       }
 
       if (data.validation.required) {
+        // Check for empty arrays (FormArray case)
+        if (Array.isArray(control.value)) {
+          if (data.responseType == ResponseType.MULTISELECT) {
+            return control.value.some((v) => v != '')
+              ? null
+              : { err: 'Select at least one option' };
+          }
+          if (data.responseType == ResponseType.ENTITY_DROPDOWN && data.entityConfig?.multiSelect) {
+            // Entity dropdown with multi-select uses FormArray
+            return control.value.some((v) => v != '' && v != null && v != undefined)
+              ? null
+              : { err: 'Select at least one option' };
+          }
+          // Empty array for other types
+          if (control.value.length === 0) {
+            return { err: 'Required field' };
+          }
+        }
+        
         if (!control.value) {
           return { err: 'Required field' };
-        }
-
-        if (data.responseType == ResponseType.MULTISELECT) {
-          return control.value.some((v) => v != '')
-            ? null
-            : { err: 'Select at least one option' };
         }
 
         if (data.responseType == ResponseType.SLIDER) {

@@ -131,6 +131,8 @@ export interface Question {
   gpsLocation: string;
   file: string;
   pageQuestions: Question[];
+  // Entity dropdown configuration
+  entityConfig?: EntityConfig;
 }
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
@@ -158,7 +160,8 @@ export enum ResponseType {
   PAGEQUESTIONS = 'pageQuestions',
   MATRIX = 'matrix',
   TEXTAREA='textDescription',
-  FILE_UPLOAD = 'fileUpload'
+  FILE_UPLOAD = 'fileUpload',
+  ENTITY_DROPDOWN = 'entity-dropdown'
 }
 
 export type FileUnion = FileClass | string;
@@ -203,6 +206,16 @@ export interface Submissions {}
 
 export interface ImageCompression {
   quality: number;
+}
+
+export interface EntityConfig {
+  entityType?: string;
+  api?: string;
+  labelKey?: string;
+  valueKey?: string;
+  searchEnabled?: boolean;
+  paginationEnabled?: boolean;
+  multiSelect?: boolean;
 }
 
 export interface ApiConfiguration{

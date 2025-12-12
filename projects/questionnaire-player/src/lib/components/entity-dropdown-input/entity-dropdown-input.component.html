@@ -1,0 +1,178 @@
+<div
+  *ngIf="questionnaireForm?.contains(question._id)"
+  [formGroup]="questionnaireForm"
+  class="entity-dropdown-container"
+>
+  <!-- Selected Tags Display -->
+  <div class="selected-tags-container">
+    <div class="tags-wrapper">
+      <!-- Multi-select: Show all selected tags -->
+      <div *ngIf="isMultiSelect" class="tags-list">
+        <div
+          *ngFor="let option of selectedOptions"
+          class="entity-tag"
+        >
+          <span class="tag-label">{{ option.label || option.value }}</span>
+          <button
+            type="button"
+            class="tag-remove-btn"
+            (click)="removeSelectedOption(option.value)"
+            aria-label="Remove"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Single-select: Show single tag -->
+      <div *ngIf="!isMultiSelect && selectedOption" class="tags-list">
+        <div class="entity-tag">
+          <span class="tag-label">{{ selectedOption.label || selectedOption.value }}</span>
+          <button
+            type="button"
+            class="tag-remove-btn"
+            (click)="removeSelectedOption(selectedOption.value)"
+            aria-label="Remove"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </div>
+
+      <!-- Add Button -->
+      <button
+        type="button"
+        mat-button
+        class="add-button"
+        (click)="openModal()"
+      >
+        <mat-icon>add</mat-icon>
+        <span>Add</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<mat-error *ngIf="questionnaireForm?.contains(question._id) && isTouched && !isValid">
+  {{ getValidationMessage(question._id) }}
+</mat-error>
+
+<!-- Modal Template -->
+<ng-template #modalTemplate>
+  <div class="entity-modal-content">
+    <!-- Modal Header -->
+    <div mat-dialog-title class="modal-header">
+      <h2 class="modal-title">{{ modalTitle }}</h2>
+      <button
+        mat-icon-button
+        class="modal-close-btn"
+        (click)="closeModal()"
+        aria-label="Close"
+      >
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <!-- Search Input -->
+    <div class="modal-search-container" *ngIf="question.entityConfig?.searchEnabled !== false">
+      <mat-form-field appearance="outline" style="width: 100%;">
+        <mat-label>Search</mat-label>
+        <input
+          matInput
+          (input)="onSearchChange($event)"
+          [value]="searchTerm"
+          placeholder="Type to search..."
+          autocomplete="off"
+        />
+        <mat-icon matSuffix>search</mat-icon>
+      </mat-form-field>
+    </div>
+
+    <!-- Loading State -->
+    <div class="modal-loading-container" *ngIf="isLoading && options.length === 0">
+      <mat-spinner diameter="30"></mat-spinner>
+      <p>Loading options...</p>
+    </div>
+
+    <!-- Error State -->
+    <div class="modal-error-container" *ngIf="errorMessage && !isLoading">
+      <mat-icon>error_outline</mat-icon>
+      <p>{{ errorMessage }}</p>
+    </div>
+
+    <!-- Empty State -->
+    <div class="modal-empty-container" *ngIf="!isLoading && !errorMessage && options.length === 0">
+      <mat-icon>inbox</mat-icon>
+      <p>No options found</p>
+    </div>
+
+    <!-- Entity List -->
+    <div
+      mat-dialog-content
+      class="modal-content"
+      *ngIf="!isLoading || options.length > 0"
+    >
+      <div
+        class="modal-options-list"
+        (scroll)="onScroll($event)"
+        [class.scrollable]="question.entityConfig?.paginationEnabled !== false"
+      >
+        <!-- Multi-select: Checkboxes -->
+        <div *ngIf="isMultiSelect" class="options-container">
+          <mat-checkbox
+            *ngFor="let option of filteredOptions"
+            [checked]="isSelected(option.value)"
+            (change)="toggleSelection(option)"
+            class="option-checkbox"
+          >
+            {{ option.label }}
+          </mat-checkbox>
+        </div>
+        <!-- Single-select: Radio buttons -->
+        <div *ngIf="!isMultiSelect" class="options-container">
+          <mat-radio-group>
+            <mat-radio-button
+              *ngFor="let option of filteredOptions"
+              [value]="option.value"
+              [checked]="isSelected(option.value)"
+              (change)="toggleSelection(option)"
+              class="option-radio"
+            >
+              {{ option.label }}
+            </mat-radio-button>
+          </mat-radio-group>
+        </div>
+
+        <!-- Loading More Indicator -->
+        <div class="loading-more" *ngIf="isLoading && options.length > 0">
+          <mat-spinner diameter="20"></mat-spinner>
+          <span>Loading more...</span>
+        </div>
+      </div>
+
+      <!-- Load More Button (Alternative to infinite scroll) -->
+      <div class="load-more-container" *ngIf="hasMore && !isLoading && question.entityConfig?.paginationEnabled !== false && options.length > 0">
+        <button mat-button (click)="loadMore()" class="load-more-btn">
+          Load More
+        </button>
+      </div>
+    </div>
+
+    <!-- Modal Actions -->
+    <div mat-dialog-actions class="modal-actions">
+      <button mat-button (click)="closeModal()" class="cancel-btn">
+        Cancel
+      </button>
+      <button
+        mat-button
+        (click)="confirmSelection()"
+        class="confirm-btn"
+        [disabled]="tempSelectedValues.size === 0"
+      >
+        {{ isMultiSelect ? 'Add' : 'Select' }}
+      </button>
+    </div>
+  </div>
+</ng-template>
