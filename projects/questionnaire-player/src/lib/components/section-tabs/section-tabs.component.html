@@ -6,8 +6,11 @@
   >
     <mat-tab
       *ngFor="let section of sections; let secId = index"
-      [label]="section.name"
     >
+    <ng-template mat-tab-label>
+      <mat-icon *ngIf="section.icon" class="mr-10">{{ section.icon }}</mat-icon>
+      {{ section.name }}
+    </ng-template>
       <span [id]="section.name" *ngIf="section.name">
         <lib-cards-questions
           #mainComponent

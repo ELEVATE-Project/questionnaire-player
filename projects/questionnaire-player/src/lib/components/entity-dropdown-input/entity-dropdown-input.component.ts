@@ -170,12 +170,12 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
 
     // Calculate skip based on current page: skip = (currentPage - 1) * pageSize
     const skip = (this.currentPage - 1) * this.pageSize;
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set('skip', skip.toString())
       .set('limit', this.pageSize.toString());
 
     if (this.searchTerm && this.question.entityConfig?.searchEnabled !== false) {
-      params.set('q', this.searchTerm);
+      params = params.set('q', this.searchTerm);
     }
 
     const apiUrl = this.question.entityConfig.api;

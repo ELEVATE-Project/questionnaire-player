@@ -79,10 +79,12 @@ export interface Section {
   code: string;
   questions: Question[];
   name: string;
+  icon?: string;
 }
 
 export interface Question {
   _id: string;
+  icon?: string;
   question: string;
   isCompleted: boolean;
   showRemarks: string;

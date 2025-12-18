@@ -40,11 +40,13 @@
           {
             "code": "S1",
             "name": "Demographics",
+            "icon": "group",
             "questions": [
               {
                 "_id": "40604957cc1345c4be9891d4",
                 "externalId": "",
                 "question": "Survey Metadata",
+                "icon": "group",
                 "columnCount": 2,
                 "tip": "",
                 "hint": "",
@@ -443,6 +445,7 @@
           {
             "code": "S2",
             "name": "Human Capital",
+            "icon": "school",
             "questions": [
               {
                 "_id": "601be9e677a54b1c9b7766fc",

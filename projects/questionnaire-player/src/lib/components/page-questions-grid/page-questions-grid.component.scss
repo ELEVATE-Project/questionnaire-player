@@ -21,7 +21,6 @@
   font-size: 1rem;
   font-weight: 600;
   font-family: 'Montserrat', sans-serif;
-  padding: 1.5rem 1.5rem 0 1.5rem;
   border-radius: 0.625rem;
 }
 
@@ -135,7 +134,7 @@
   }
 }
 
-.wc-primary-color {
-  color: #1e293b;
+.primary-color {
+  color: var(--primary-color);
 }
 
