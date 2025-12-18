@@ -109,6 +109,11 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     }, '*');
   }
 
+  sendProgressMessage() {
+    const message = { type: 'PROGRESS', data: this.pageProgressValue };
+    window.postMessage(message, '*');
+  }
+
   async ngOnChanges(changes: SimpleChanges) {
     let initialResponse:any; 
 
@@ -147,6 +152,8 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   async ngOnInit() {
     this.loadInitialData();
     this.toaster.clearToaster();
+    // Send initial progress message
+    this.sendProgressMessage();
 
     let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
     if (typeof this.apiConfig === 'string' || typeof this.apiconfig === 'string') {
@@ -408,6 +415,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       this.pageProgressValue = this.evidence?.pageProgressValue || 0;
       this.completedPages = this.evidence?.completedPages || 0;
       this.totalPages = this.evidence?.totalPages || 0;
+      this.sendProgressMessage();
       this.evidence.startTime = Date.now();
       this.endDate = new Date(
         new Date(currentObservation?.assessment?.endDate).getTime() +
@@ -1217,6 +1225,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     this.pageProgressValue = this.totalPages > 0
     ? Math.round((this.completedPages / this.totalPages) * 100)
     : 0;
+    this.sendProgressMessage();
   }
 
   async startQuestioner() {

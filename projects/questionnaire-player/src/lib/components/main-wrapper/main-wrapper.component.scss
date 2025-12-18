@@ -283,6 +283,12 @@
   border: solid transparent 0.063rem;
 }
 
+.top-primary-border {
+  border-top: 2px solid var(--primary-color);
+  padding-top: 1.063rem;
+  margin-top: 1rem;
+}
+
 @media (max-width: 600px) {
   .upload-text,
   .upload-text .progress {
