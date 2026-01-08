@@ -23,6 +23,7 @@ export class SectionTabsComponent {
   @Input() isExpired: boolean;
   @Input() fileSizeLimit: any;
   @Input() apiConfig: ApiConfiguration;
+  @Input() fileUploadResponse: any;
   private _sectionIndex: number = 0;
 
   @Input()

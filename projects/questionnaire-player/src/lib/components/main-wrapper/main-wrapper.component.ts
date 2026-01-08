@@ -54,6 +54,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   @ViewChild('sectionTabs') public sectionTabs: any;
   questionMap = {};
   pageMsg = new Map();
+  incompleteFields: Array<{sectionName: string, sectionIndex: number, questions: Array<{_id: string, question: string, questionNumber: string, pageIndex: number, sectionIndex: number}>}> = [];
   endDate: Date;
   sectionName: string;
   listing = false;
@@ -505,6 +506,88 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  getIncompleteFields() {
+    this.incompleteFields = [];
+    const enablePagination = this.apiConfig?.enablePagination !== false;
+    
+    if (!this.sections || !this.questionnaireForm) {
+      return;
+    }
+
+    for (let sectionIndex = 0; sectionIndex < this.sections.length; sectionIndex++) {
+      let questionIndexInSection = 0;
+      const sectionIncompleteQuestions: Array<{_id: string, question: string, questionNumber: string, pageIndex: number, sectionIndex: number}> = [];
+
+      for (let questionIndex = 0; questionIndex < this.sections[sectionIndex].questions.length; questionIndex++) {
+        const question = this.sections[sectionIndex].questions[questionIndex];
+        
+        // Check if question is visible
+        const isVisible = (Array.isArray(question.visibleIf) && question.canDisplay) || !Array.isArray(question.visibleIf);
+        if (!isVisible) continue;
+
+        if (question.responseType === 'pageQuestions') {
+          for (let pqIndex = 0; pqIndex < question.pageQuestions.length; pqIndex++) {
+            const pageQuestion = question.pageQuestions[pqIndex];
+            const pqIsVisible = (Array.isArray(pageQuestion.visibleIf) && pageQuestion.canDisplay) || !Array.isArray(pageQuestion.visibleIf);
+            if (!pqIsVisible) continue;
+
+            const control = this.questionnaireForm.controls[pageQuestion._id];
+            const validation = pageQuestion.validation;
+            const isRequired = typeof validation !== 'string' && validation?.required;
+            const value = control?.value;
+
+            if (isRequired) {
+              const isEmpty = Array.isArray(value) 
+                ? !value.some(v => v !== '' && v != null && v !== undefined)
+                : (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === ''));
+
+              if (isEmpty || !control?.valid) {
+                sectionIncompleteQuestions.push({
+                  _id: pageQuestion._id,
+                  question: pageQuestion.question,
+                  questionNumber: pageQuestion.questionNumber,
+                  pageIndex: enablePagination ? questionIndex : questionIndexInSection,
+                  sectionIndex: sectionIndex
+                });
+              }
+            }
+            questionIndexInSection++;
+          }
+        } else {
+          const control = this.questionnaireForm.controls[question._id];
+          const validation = question.validation;
+          const isRequired = typeof validation !== 'string' && validation?.required;
+          const value = control?.value;
+
+          if (isRequired) {
+            const isEmpty = Array.isArray(value)
+              ? !value.some(v => v !== '' && v != null && v !== undefined)
+              : (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === ''));
+
+            if (isEmpty || !control?.valid) {
+              sectionIncompleteQuestions.push({
+                _id: question._id,
+                question: question.question,
+                questionNumber: question.questionNumber,
+                pageIndex: enablePagination ? questionIndex : questionIndexInSection,
+                sectionIndex: sectionIndex
+              });
+            }
+          }
+          questionIndexInSection++;
+        }
+      }
+
+      if (sectionIncompleteQuestions.length > 0) {
+        this.incompleteFields.push({
+          sectionName: this.sections[sectionIndex].name,
+          sectionIndex: sectionIndex,
+          questions: sectionIncompleteQuestions
+        });
+      }
+    }
+  }
+
   getQuestionMap() {
     // Reset questionMap and pageMsg to prevent duplicates on multiple renders
     this.questionMap = {};
@@ -643,6 +726,10 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
         }
       }
     }
+    if (this.apiConfig?.showSaveDraftButton === true) {
+      this.getIncompleteFields();
+    }
+    
     this.dialog.open(this.questionMapModal, {
       width: 'auto',
       enterAnimationDuration: 300,
@@ -1019,6 +1106,19 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async goToQuestion(questonId, pageIndex, sectionIndex) {
+    // Close modal first
+    this.closeModal();
+    
+    // Wait for modal to close and DOM to update
+    await new Promise(resolve => setTimeout(resolve, 300));
+    
+    // Mark the form control as touched to show validation errors
+    const control = this.questionnaireForm?.controls[questonId];
+    if (control) {
+      control.markAsTouched();
+      control.markAsDirty();
+    }
+    
     // Check if pagination is enabled
     const enablePagination = this.apiConfig?.enablePagination !== false;
     
@@ -1026,7 +1126,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     if (sectionIndex !== this.sectionIndex) {
       await this.setSection(sectionIndex, true);
       // Wait for tab to switch and component to be ready
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 300));
     }
     
     const mainComponent = this.sectionTabs?.getCurrentMainComponent();
@@ -1038,68 +1138,104 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
           pageIndex: pageIndex,
           questonId: questonId,
         });
+        // Wait for page to load
+        await new Promise(resolve => setTimeout(resolve, 400));
       } else {
         // Non-paginated mode: Scroll directly to the question element
         // Wait for DOM to be ready and Angular change detection to complete
         await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Use requestAnimationFrame to ensure DOM is fully rendered
-        requestAnimationFrame(() => {
-          // Try multiple ways to find the question element
-          let questionElement = document.getElementById(questonId);
-          
-          // If not found by ID, try querySelector (for Angular component root elements)
-          if (!questionElement) {
-            questionElement = document.querySelector(`[id="${questonId}"]`) as HTMLElement;
-          }
-          
-          // If still not found, try to find the parent container
-          if (!questionElement) {
-            // Look for the input/component element and get its parent container
-            const inputElement = document.querySelector(`input[id="${questonId}"], textarea[id="${questonId}"], mat-radio-group[id="${questonId}"], mat-checkbox[id="${questonId}"]`);
-            if (inputElement) {
-              // Find the parent div with class 'responsive-margin' which wraps the question
-              questionElement = inputElement.closest('.responsive-margin') as HTMLElement;
-            }
-          }
-          
-          // If still not found, try finding by data attribute or any element containing the ID
-          if (!questionElement) {
-            const allElements = document.querySelectorAll(`[id*="${questonId}"]`);
-            if (allElements.length > 0) {
-              questionElement = allElements[0] as HTMLElement;
-            }
-          }
-          
-          if (questionElement) {
-            // Scroll to the element
-            questionElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
-            // Highlight the question briefly
-            const originalBoxShadow = questionElement.style.boxShadow;
-            const originalTransition = questionElement.style.transition;
-            questionElement.style.transition = 'box-shadow 0.3s';
-            questionElement.style.boxShadow = '0 0 15px rgba(0, 102, 0, 0.6)';
-            
-            // Focus on the input element if it exists
-            const inputElement = questionElement.querySelector('input, textarea, mat-radio-group, mat-checkbox') as HTMLElement;
-            if (inputElement && inputElement.focus) {
-              setTimeout(() => {
-                inputElement.focus();
-              }, 300);
-            }
-            
-            setTimeout(() => {
-              questionElement.style.boxShadow = originalBoxShadow;
-              questionElement.style.transition = originalTransition;
-            }, 2000);
-            } else {
-              console.warn(`Question element with ID "${questonId}" not found`);
-            }
-        });
       }
     }
-    this.closeModal();
+    
+    // Use multiple attempts to find and focus the field
+    const focusField = () => {
+      // Try multiple ways to find the input element
+      let inputElement: HTMLElement | null = null;
+      
+      // Method 1: Direct ID match
+      inputElement = document.getElementById(questonId) as HTMLElement;
+      
+      // Method 2: Query selector for common input types
+      if (!inputElement) {
+        inputElement = document.querySelector(`input[id="${questonId}"], textarea[id="${questonId}"], mat-select[id="${questonId}"]`) as HTMLElement;
+      }
+      
+      // Method 3: Find by name attribute
+      if (!inputElement) {
+        inputElement = document.querySelector(`input[name="${questonId}"], textarea[name="${questonId}"]`) as HTMLElement;
+      }
+      
+      // Method 4: Find within question container
+      if (!inputElement) {
+        const questionContainer = document.querySelector(`[id*="${questonId}"]`);
+        if (questionContainer) {
+          inputElement = questionContainer.querySelector('input, textarea, mat-select, mat-radio-group, mat-checkbox') as HTMLElement;
+        }
+      }
+      
+      // Method 5: Find by form control name
+      if (!inputElement && control) {
+        const formElement = document.querySelector(`[formcontrolname="${questonId}"]`) as HTMLElement;
+        if (formElement) {
+          inputElement = formElement.querySelector('input, textarea, mat-select') as HTMLElement || formElement;
+        }
+      }
+      
+      // Method 6: Find the question container and scroll to it, then find input
+      if (!inputElement) {
+        const questionContainer = document.querySelector(`[id="${questonId}"], [data-question-id="${questonId}"]`) as HTMLElement;
+        if (questionContainer) {
+          questionContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          inputElement = questionContainer.querySelector('input, textarea, mat-select, mat-radio-group, mat-checkbox') as HTMLElement;
+        }
+      }
+      
+      if (inputElement) {
+        // Scroll to the element first
+        inputElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Highlight the question container briefly
+        const container = inputElement.closest('.responsive-margin, [class*="question"], [class*="field"]') || inputElement.parentElement;
+        if (container) {
+          const originalBoxShadow = (container as HTMLElement).style.boxShadow;
+          const originalTransition = (container as HTMLElement).style.transition;
+          (container as HTMLElement).style.transition = 'box-shadow 0.3s';
+          (container as HTMLElement).style.boxShadow = '0 0 15px rgba(163, 0, 0, 0.6)';
+          
+          setTimeout(() => {
+            (container as HTMLElement).style.boxShadow = originalBoxShadow;
+            (container as HTMLElement).style.transition = originalTransition;
+          }, 2000);
+        }
+        
+        // Focus on the input element
+        setTimeout(() => {
+          if (inputElement) {
+            if (inputElement.focus) {
+              inputElement.focus();
+            }
+            // For mat-select, trigger click to open
+            if (inputElement.tagName === 'MAT-SELECT' || inputElement.classList.contains('mat-select')) {
+              (inputElement as any).click();
+            }
+          }
+        }, 100);
+        
+        return true;
+      }
+      
+      return false;
+    };
+    
+    // Try focusing immediately
+    if (!focusField()) {
+      // If not found, wait a bit more and try again
+      setTimeout(() => {
+        if (!focusField()) {
+          console.warn(`Question element with ID "${questonId}" not found for focusing`);
+        }
+      }, 500);
+    }
   }
 
   formIsNotDirty() {

@@ -116,83 +116,159 @@
 <!-- question map modal -->
 <ng-template #questionMapModal>
   <div style="padding: 0 4px">
-    <div
-      mat-dialog-title
-      class="d-flex flex-dr flex-ai-center flex-gap-3 flex-jc-flex-start p-10"
-      style="color: var(--primary-color)"
-    >
-      Question Map
-    </div>
-    <mat-divider></mat-divider>
-    <div mat-dialog-content class="qmap">
+    <!-- Incomplete Form UI when showSaveDraftButton is true -->
+    <ng-container *ngIf="apiConfig?.showSaveDraftButton === true; else questionMapView">
       <div
-        class="d-flex flex-dr flex-w-wrap flex-gap-8"
-        style="margin-bottom: 8px"
+        mat-dialog-title
+        class="d-flex flex-dr flex-ai-center flex-jc-space-between flex-gap-3 p-10"
+        style="color: var(--primary-color)"
       >
-        <span style="color: #080808"
-          ><span style="color: #a30000; font-size: 48px; vertical-align: bottom"
-            >&#x2022;</span
-          >
-          Required & unanswered</span
-        >
-        <span style="color: #080808"
-          ><span style="color: #006600; font-size: 48px; vertical-align: bottom"
-            >&#x2022;</span
-          >
-          Answered</span
-        >
-        <span style="color: #080808"
-          ><span style="color: #595959; font-size: 48px; vertical-align: bottom"
-            >&#x2022;</span
-          >
-          Optional & unanswered</span
-        >
+        <div class="d-flex flex-dr flex-ai-center flex-gap-3">
+          <mat-icon style="color: #ffc107; font-size: 24px; width: 24px; height: 24px;">warning</mat-icon>
+          <div class="d-flex flex-dc">
+            <span style="font-weight: bold; font-size: 18px;">Incomplete Form</span>
+            <span style="font-weight: normal; font-size: 14px; color: #080808;">Please complete all required fields</span>
+          </div>
+        </div>
+        <mat-icon 
+          style="cursor: pointer; color: #080808;" 
+          (click)="closeModal()"
+        >close</mat-icon>
       </div>
-      <div *ngFor="let page of questionMap | sortKeys" style="padding: 4px">
-        <ng-container *ngIf="questionMap[page].length">
-          <div class="d-flex" style="color: #080808">
-            <div>
-              <mat-icon style="vertical-align: middle">arrow_right</mat-icon>
+      <mat-divider></mat-divider>
+      <div mat-dialog-content style="padding: 16px; max-height: 60vh; overflow-y: auto;">
+        <p style="margin-bottom: 16px; color: #080808;">Click on any field below to jump directly to it:</p>
+        <div *ngFor="let section of incompleteFields" style="margin-bottom: 12px;">
+          <div 
+            style="
+              border-left: 4px solid #ff6b35;
+              border-radius: 4px;
+              padding: 12px;
+              background-color: #fff;
+              cursor: pointer;
+              transition: box-shadow 0.2s;
+            "
+            (click)="goToQuestion(section.questions[0]._id, section.questions[0].pageIndex, section.questions[0].sectionIndex)"
+            (mouseenter)="$any($event.currentTarget).style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)'"
+            (mouseleave)="$any($event.currentTarget).style.boxShadow = 'none'"
+          >
+            <div style="color: #a30000; font-weight: 600; margin-bottom: 8px; font-size: 14px;">
+              {{ section.sectionName }}
             </div>
-            <div class="d-flex flex-dc">
-              <ng-container *ngIf="!pageMsg.has(page); else pageWithMsg">{{
-                page
-              }}</ng-container>
-              <ng-template #pageWithMsg>
-                {{ page + " (" + pageMsg.get(page) + ")" }}
-              </ng-template>
-              <div
-                class="d-flex flex-dr flex-gap-8 flex-w-wrap"
-                style="margin: 12px 0"
+            <div 
+              *ngFor="let question of section.questions" 
+              style="margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"
+              (click)="goToQuestion(question._id, question.pageIndex, question.sectionIndex); $event.stopPropagation()"
+            >
+              <span
+                style="
+                  color: #0066cc;
+                  text-decoration: none;
+                  cursor: pointer;
+                  flex: 1;
+                "
+                (mouseenter)="$any($event.currentTarget).style.textDecoration = 'underline'"
+                (mouseleave)="$any($event.currentTarget).style.textDecoration = 'none'"
               >
-                <ng-container *ngFor="let question of questionMap[page]">
-                  <button
-                    (click)="
-                      goToQuestion(
-                        question._id,
-                        question.pageIndex,
-                        question.sectionIndex
-                      )
-                    "
-                    mat-mini-fab
-                    [ngStyle]="{
-                      'background-color': question.validity
-                    }"
-                  >
-                    {{ question.questionNumber }}
-                  </button>
-                </ng-container>
-              </div>
+                {{ question.question }}
+              </span>
+              <mat-icon style="font-size: 16px; width: 16px; height: 16px; color: #808080; margin-left: 8px;">chevron_right</mat-icon>
             </div>
           </div>
-        </ng-container>
+        </div>
       </div>
-    </div>
-    <div mat-dialog-actions class="d-flex flex-jc-space-around">
-      <button class="btn btn-primary" type="button" (click)="closeModal()">
-        Close
-      </button>
-    </div>
+      <div mat-dialog-actions class="d-flex flex-jc-flex-end" style="padding: 16px;">
+        <button 
+          class="btn btn-primary" 
+          type="button" 
+          (click)="closeModal()"
+          style="background-color: #8B0000; color: white;"
+        >
+          Go Back to Form
+        </button>
+      </div>
+    </ng-container>
+
+    <!-- Question Map UI when showSaveDraftButton is false -->
+    <ng-template #questionMapView>
+      <div
+        mat-dialog-title
+        class="d-flex flex-dr flex-ai-center flex-gap-3 flex-jc-flex-start p-10"
+        style="color: var(--primary-color)"
+      >
+        Question Map
+      </div>
+      <mat-divider></mat-divider>
+      <div mat-dialog-content class="qmap">
+        <div
+          class="d-flex flex-dr flex-w-wrap flex-gap-8"
+          style="margin-bottom: 8px"
+        >
+          <span style="color: #080808"
+            ><span style="color: #a30000; font-size: 48px; vertical-align: bottom"
+              >&#x2022;</span
+            >
+            Required & unanswered</span
+          >
+          <span style="color: #080808"
+            ><span style="color: #006600; font-size: 48px; vertical-align: bottom"
+              >&#x2022;</span
+            >
+            Answered</span
+          >
+          <span style="color: #080808"
+            ><span style="color: #595959; font-size: 48px; vertical-align: bottom"
+              >&#x2022;</span
+            >
+            Optional & unanswered</span
+          >
+        </div>
+        <div *ngFor="let page of questionMap | sortKeys" style="padding: 4px">
+          <ng-container *ngIf="questionMap[page].length">
+            <div class="d-flex" style="color: #080808">
+              <div>
+                <mat-icon style="vertical-align: middle">arrow_right</mat-icon>
+              </div>
+              <div class="d-flex flex-dc">
+                <ng-container *ngIf="!pageMsg.has(page); else pageWithMsg">{{
+                  page
+                }}</ng-container>
+                <ng-template #pageWithMsg>
+                  {{ page + " (" + pageMsg.get(page) + ")" }}
+                </ng-template>
+                <div
+                  class="d-flex flex-dr flex-gap-8 flex-w-wrap"
+                  style="margin: 12px 0"
+                >
+                  <ng-container *ngFor="let question of questionMap[page]">
+                    <button
+                      (click)="
+                        goToQuestion(
+                          question._id,
+                          question.pageIndex,
+                          question.sectionIndex
+                        )
+                      "
+                      mat-mini-fab
+                      [ngStyle]="{
+                        'background-color': question.validity
+                      }"
+                    >
+                      {{ question.questionNumber }}
+                    </button>
+                  </ng-container>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+      <div mat-dialog-actions class="d-flex flex-jc-space-around">
+        <button class="btn btn-primary" type="button" (click)="closeModal()">
+          Close
+        </button>
+      </div>
+    </ng-template>
   </div>
 </ng-template>
 

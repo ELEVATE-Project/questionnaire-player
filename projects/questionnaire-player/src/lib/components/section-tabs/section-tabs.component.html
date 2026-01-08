@@ -9,7 +9,7 @@
     >
       <ng-template mat-tab-label>
         <mat-icon *ngIf="section.icon">{{ section.icon }}</mat-icon>
-        {{ section.name }}
+        {{ section.name }} {{ apiConfig?.usePageQuestionsGrid }}
       </ng-template>
       <span [id]="section.name" *ngIf="section.name">
         <lib-cards-questions
@@ -28,6 +28,18 @@
 
 <ng-template #singleSection>
   <span [id]="sections?.[0]?.name" *ngIf="sections?.[0]?.name">
+    <lib-page-questions-grid
+    #pageQuestionsGrid
+    [pageQuestions]="sections?.[0]?.questions"
+    [questionnaireForm]="questionnaireForm"
+    [fileUploadResponse]="fileUploadResponse"
+    [fileSizeLimit]="fileSizeLimit"
+    [isSubmitted]="isSubmitted"
+    [isExpired]="isExpired"
+    [apiConfig]="apiConfig"
+    *ngIf="apiConfig?.usePageQuestionsGrid === true"
+  ></lib-page-questions-grid>
+
     <lib-main
       #mainComponent
       [questions]="sections?.[0]?.questions"
@@ -36,6 +48,7 @@
       [isExpired]="isExpired"
       [fileSizeLimit]="fileSizeLimit"
       [apiConfig]="apiConfig"
+      *ngIf="apiConfig?.usePageQuestionsGrid === false"
     ></lib-main>
   </span>
 </ng-template>
