@@ -87,6 +87,10 @@
           [question]="question"></lib-date-input>
         <lib-entity-dropdown-input [id]="question._id" tabindex="-1" *ngIf="question.responseType == reponseType.ENTITY_DROPDOWN" [questionnaireForm]="questionnaireForm"
           [question]="question" (dependentParent)="toggleQuestion($event)"></lib-entity-dropdown-input>
+        <lib-select-dropdown-input [id]="question._id" tabindex="-1" *ngIf="question.responseType == reponseType.SELECT_DROPDOWN" [questionnaireForm]="questionnaireForm"
+          [question]="question" [options]="question.options" (dependentParent)="toggleQuestion($event)"></lib-select-dropdown-input>
+        <lib-select-dropdown-input [id]="question._id" tabindex="-1" *ngIf="question.responseType == reponseType.MULTISELECT_DROPDOWN" [questionnaireForm]="questionnaireForm"
+          [question]="question" [options]="question.options" (dependentParent)="toggleQuestion($event)"></lib-select-dropdown-input>
         <lib-file-upload-input [id]="question._id" tabindex="-1" *ngIf="question.responseType == reponseType.FILE_UPLOAD" [questionnaireForm]="questionnaireForm"
           [question]="question" [fileSizeLimit]="fileSizeLimit"></lib-file-upload-input>
         <lib-matrix-questions *ngIf="question.responseType == reponseType.MATRIX"

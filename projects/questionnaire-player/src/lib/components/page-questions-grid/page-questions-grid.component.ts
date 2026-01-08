@@ -82,7 +82,7 @@ export class PageQuestionsGridComponent implements OnInit, AfterViewInit {
 
   domQuery(elementId: number, action: string, questionId?: string): void {
     if (document.getElementById(`page-group-${elementId}`)) {
-      document.getElementById(`page-group-${elementId}`)!.style.display = action;
+      // document.getElementById(`page-group-${elementId}`)!.style.display = action;
     }
     if (questionId && document.getElementById(`${questionId}`)) {
       window.setTimeout(() => {

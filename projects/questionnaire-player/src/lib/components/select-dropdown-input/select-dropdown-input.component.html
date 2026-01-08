@@ -1,0 +1,37 @@
+<div
+  *ngIf="questionnaireForm?.contains(question._id)"
+  [formGroup]="questionnaireForm"
+  class="select-dropdown-container"
+>
+  <mat-form-field appearance="outline" style="width: 100%;">
+    <!-- Single Select -->
+    <mat-select
+      *ngIf="!isMultiSelect"
+      [formControlName]="question._id"
+      (selectionChange)="onChange($event.value)"
+      [placeholder]="'Select an option'"
+    >
+      <mat-option *ngFor="let option of options" [value]="option.value">
+        {{ option.label }}
+      </mat-option>
+    </mat-select>
+
+    <!-- Multi Select -->
+    <mat-select
+      *ngIf="isMultiSelect"
+      [formControlName]="question._id"
+      (selectionChange)="onChange($event.value)"
+      [placeholder]="'Select options'"
+      multiple
+    >
+      <mat-option *ngFor="let option of options" [value]="option.value">
+        {{ option.label }}
+      </mat-option>
+    </mat-select>
+  </mat-form-field>
+</div>
+
+<mat-error *ngIf="questionnaireForm?.contains(question._id) && isTouched && !isValid">
+  {{ getValidationMessage(question._id) }}
+</mat-error>
+

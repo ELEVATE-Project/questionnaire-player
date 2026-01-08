@@ -163,7 +163,9 @@ export enum ResponseType {
   MATRIX = 'matrix',
   TEXTAREA='textDescription',
   FILE_UPLOAD = 'fileUpload',
-  ENTITY_DROPDOWN = 'entity-dropdown'
+  ENTITY_DROPDOWN = 'entity-dropdown',
+  SELECT_DROPDOWN = 'select-dropdown',
+  MULTISELECT_DROPDOWN = 'multiselect-dropdown',
 }
 
 export type FileUnion = FileClass | string;

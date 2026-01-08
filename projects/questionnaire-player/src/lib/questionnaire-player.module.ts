@@ -71,6 +71,7 @@ import { PageQuestionsGridComponent } from './components/page-questions-grid/pag
 import { CardsQuestionsComponent } from './components/cards-questions/cards-questions.component';
 import { FileUploadInputComponent } from './components/file-upload-input/file-upload-input.component';
 import { EntityDropdownInputComponent } from './components/entity-dropdown-input/entity-dropdown-input.component';
+import { SelectDropdownInputComponent } from './components/select-dropdown-input/select-dropdown-input.component';
 
 const routes: Routes = [
   { path: 'observation', component: ObservationWrapperComponent }
@@ -121,7 +122,8 @@ const MAT_CUSTOM_DATE_FORMATS = {
     PageQuestionsGridComponent,
     CardsQuestionsComponent,
     FileUploadInputComponent,
-    EntityDropdownInputComponent
+    EntityDropdownInputComponent,
+    SelectDropdownInputComponent
     ],
   imports: [
     CommonModule,
