@@ -242,6 +242,8 @@ export interface ApiConfiguration{
   gridCount?: number; // If provided, use grid layout with specified number of columns
   labelInputHorizontalLayout?: boolean; // If true, display label and input side by side horizontally
   showSaveDraftButton?: boolean; // If true, show the save draft button, otherwise hide it
+  progressCalculationLevel?: 'page' | 'input'; // 'page' calculates progress when all questions on a page are complete, 'input' calculates progress for each individual input/field
+  progressCountOptionalFields?: boolean; // If true, optional fields are also counted in progress calculation (default: true for input level, false for page level)
 }
 
 

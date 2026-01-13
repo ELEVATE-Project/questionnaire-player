@@ -14,19 +14,25 @@ export class AppModule implements DoBootstrap {
   constructor(private injector: Injector) {}
 
   ngDoBootstrap(): void {
-    const customMainElement = createCustomElement(MainWrapperComponent, {
-      injector: this.injector
-    });
-    customElements.define('questionnaire-player-main', customMainElement);
+    // Check if custom elements are already defined before registering
+    if (!customElements.get('questionnaire-player-main')) {
+      const customMainElement = createCustomElement(MainWrapperComponent, {
+        injector: this.injector
+      });
+      customElements.define('questionnaire-player-main', customMainElement);
+    }
 
-    const customReportElement = createCustomElement(ReportComponent, {
-      injector: this.injector
-    });
-    customElements.define('report-main', customReportElement);
+    if (!customElements.get('report-main')) {
+      const customReportElement = createCustomElement(ReportComponent, {
+        injector: this.injector
+      });
+      customElements.define('report-main', customReportElement);
+    }
 
-    const customObservationElement = createCustomElement(ObservationWrapperComponent, {injector: this.injector});
- 
-    customElements.define('observation-player', customObservationElement);
+    if (!customElements.get('observation-player')) {
+      const customObservationElement = createCustomElement(ObservationWrapperComponent, {injector: this.injector});
+      customElements.define('observation-player', customObservationElement);
+    }
   }
 
 

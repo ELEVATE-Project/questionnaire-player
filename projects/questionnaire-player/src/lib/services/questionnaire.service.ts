@@ -197,8 +197,18 @@ export class QuestionnaireService {
   }
 
   getEvidenceData(evidence: Evidence, formValues: object) {
-    let sections = evidence?.sections;
+    // Validate evidence parameter
+    if (!evidence) {
+      return {
+        externalId: null,
+        answers: {},
+        startTime: null,
+        endTime: Date.now(),
+        isSubmitted: false
+      };
+    }
     
+    let sections = evidence?.sections;
     let answers = this.getSectionData(sections, formValues);
     let payloadData = {
       externalId: evidence?.externalId,
@@ -212,17 +222,27 @@ export class QuestionnaireService {
 
   getSectionData(sections, formValues) {
     let answers = {};
+    // Validate sections parameter
+    if (!sections || !Array.isArray(sections) || sections.length === 0) {
+      return answers;
+    }
     for (let index = 0; index < sections.length; index++) {
-      answers = {
-        ...answers,
-        ...this.createpayload(sections[index].questions, formValues),
-      };
+      if (sections[index] && sections[index].questions) {
+        answers = {
+          ...answers,
+          ...this.createpayload(sections[index].questions, formValues),
+        };
+      }
     }
     return answers;
   }
 
   createpayload(questions, formValues) {
     let answers = {};
+    // Validate questions parameter
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+      return answers;
+    }
     for (let index = 0; index < questions.length; index++) {
       let currentQuestion = questions[index];
       if (currentQuestion.responseType == 'pageQuestions') {

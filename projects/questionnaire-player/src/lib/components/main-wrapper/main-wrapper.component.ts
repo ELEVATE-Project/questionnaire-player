@@ -111,7 +111,17 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   sendProgressMessage() {
-    const message = { type: 'PROGRESS', data: this.pageProgressValue };
+    const message = { type: 'PROGRESS', data: { percentage: this.pageProgressValue, completedPages: this.completedPages, totalPages: this.totalPages} };
+    
+    // Dispatch custom event for web component listeners
+    const customEvent = new CustomEvent('progress', {
+      detail: message,
+      bubbles: true,
+      cancelable: true
+    });
+    this.el.nativeElement.dispatchEvent(customEvent);
+    
+    // Keep window.postMessage for backward compatibility
     window.postMessage(message, '*');
   }
 
@@ -153,8 +163,6 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   async ngOnInit() {
     this.loadInitialData();
     this.toaster.clearToaster();
-    // Send initial progress message
-    this.sendProgressMessage();
 
     let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
     if (typeof this.apiConfig === 'string' || typeof this.apiconfig === 'string') {
@@ -183,12 +191,20 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
     this.questionnaireForm = this.fb.group({});
 
+    // Initial subscription for form validity check only
+    // Progress calculation will be handled in setSection subscription via updateDataInIndexDb
     this.questionnaireForm.valueChanges
+    .pipe(
+      debounceTime(300),
+      distinctUntilChanged()
+    )
     .subscribe((data: any) => {
       this.checkFormValidity();
     })
-
     this.attachmentService.trigger$.subscribe(() => {
+      // Calculate progress before updating IndexDB using unified method
+      this.calculateInitialProgress();
+
       const evidenceData = this.questionnaireService.getEvidenceData(
         this.evidence,
         this.questionnaireForm.value
@@ -350,7 +366,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     }
 
     submissions[evidenceCode].answers = { ...updatedAnswers?.answers };
-    submissions[evidenceCode].status = evidences[evidenceIndex].isSubmitted 
+    submissions[evidenceCode].status = evidences[evidenceIndex]?.isSubmitted 
       ? 'save'
       : updatedAnswers?.status === 'draft'
         ? 'draft'
@@ -363,14 +379,16 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     else if (progress > 0) progressStatus = 'inProgress';
     else if (!this.questionNotStarted) progressStatus = 'inProgress';
 
-    this.calculatePageCompletion(submissions[evidenceCode]);
+    // Progress values are current from form valueChanges; no recalculation here.
 
-    evidences[evidenceIndex].completePercentage = progress;
-    evidences[evidenceIndex].progressStatus = progressStatus;
-    evidences[evidenceIndex].pageProgressValue = this.pageProgressValue;
-    evidences[evidenceIndex].completedPages = this.completedPages;
-    evidences[evidenceIndex].totalPages = this.totalPages;
-    evidences[evidenceIndex].isSubmitted = ['save', 'submit'].includes(submissions[evidenceCode].status);
+    if (evidences && evidences[evidenceIndex]) {
+      evidences[evidenceIndex].completePercentage = progress;
+      evidences[evidenceIndex].progressStatus = progressStatus;
+      evidences[evidenceIndex].pageProgressValue = this.pageProgressValue;
+      evidences[evidenceIndex].completedPages = this.completedPages;
+      evidences[evidenceIndex].totalPages = this.totalPages;
+      evidences[evidenceIndex].isSubmitted = ['save', 'submit'].includes(submissions[evidenceCode].status);
+    }
 
     const data = {
       key: indexDbKey,
@@ -416,7 +434,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       this.pageProgressValue = this.evidence?.pageProgressValue || 0;
       this.completedPages = this.evidence?.completedPages || 0;
       this.totalPages = this.evidence?.totalPages || 0;
-      this.sendProgressMessage();
+      
       this.evidence.startTime = Date.now();
       this.endDate = new Date(
         new Date(currentObservation?.assessment?.endDate).getTime() +
@@ -433,6 +451,12 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       this.questionnaireForm.valueChanges.subscribe((data: any) => {
         this.checkFormValidity();
       })
+      
+      // Calculate initial progress after form controls are initialized in one line.
+      setTimeout(() => {
+        this.calculateInitialProgress();
+      }, 500);
+      
       this.loaded = true;
     }
     return currentObservation ? true : false;
@@ -1066,6 +1090,9 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       .subscribe((data: any) => {
         if (!data || !this.evidence) return;
 
+        // Calculate progress FIRST, synchronously, using unified method
+        this.calculateInitialProgress();
+
         const evidenceData = this.questionnaireService.getEvidenceData(this.evidence, data);
         if (!evidenceData?.answers) return;
 
@@ -1362,6 +1389,144 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     ? Math.round((this.completedPages / this.totalPages) * 100)
     : 0;
     this.sendProgressMessage();
+  }
+
+  calculateInitialProgress() {
+    if (!this.sections || !this.questionnaireForm) {
+      return;
+    }
+
+    // Check if form has any controls - if not, wait a bit more (only for initial load)
+    const formControlKeys = Object.keys(this.questionnaireForm.controls);
+    if (formControlKeys.length === 0 && !this.evidence) {
+      // Form controls not ready yet, try again after a delay (only on initial load)
+      setTimeout(() => {
+        this.calculateInitialProgress();
+      }, 300);
+      return;
+    }
+
+    // Get progress calculation level from config (default: 'page')
+    const progressLevel = this.apiConfig?.progressCalculationLevel || 'page';
+    
+    if (progressLevel === 'input') {
+      // Input level calculation - counts each individual input/field
+      this.calculateInputLevelProgress();
+    } else {
+      // Page level calculation - counts completed pages
+      if (this.evidence) {
+        const evidenceData = this.questionnaireService.getEvidenceData(
+          this.evidence,
+          this.questionnaireForm.value
+        );
+        if (evidenceData?.answers) {
+          const submission = {
+            answers: evidenceData.answers
+          };
+          this.calculatePageCompletion(submission);
+        } else {
+          // If no answers yet, initialize with 0 progress
+          this.totalPages = 0;
+          this.completedPages = 0;
+          this.calculatePageProgressValue();
+        }
+      } else {
+        // If evidence not available yet, initialize with 0 progress
+        this.totalPages = 0;
+        this.completedPages = 0;
+        this.calculatePageProgressValue();
+      }
+    }
+  }
+
+  calculateInputLevelProgress() {
+    if (!this.sections || !this.questionnaireForm) return;
+
+    let totalInputs = 0;
+    let completedInputs = 0;
+    const countOptionalFields = this.apiConfig?.progressCountOptionalFields !== false; // Default: true (count optional fields)
+
+    this.sections.forEach((section) => {
+      section.questions.forEach((q: any) => {
+        // Check if question is visible
+        const isVisible = (Array.isArray(q.visibleIf) && q.canDisplay) || !Array.isArray(q.visibleIf);
+        if (!isVisible) return;
+
+        if (q.responseType === 'pageQuestions') {
+          // For pageQuestions, count each pageQuestion as a separate input
+          q.pageQuestions.forEach((pq: any) => {
+            const pqIsVisible = (Array.isArray(pq.visibleIf) && pq.canDisplay) || !Array.isArray(pq.visibleIf);
+            if (!pqIsVisible) return;
+
+            const control = this.questionnaireForm.controls[pq._id];
+            if (!control) return; // Skip if control doesn't exist
+
+            const validation = pq.validation;
+            const isRequired = typeof validation !== 'string' && validation?.required;
+            const value = control.value;
+
+            // Count field if: required OR (optional AND countOptionalFields is true)
+            const countThisField = isRequired || countOptionalFields;
+            
+            if (countThisField) {
+              totalInputs++;
+              
+            // Check if field is completed
+            const isEmpty = Array.isArray(value)
+              ? !value.some(v => v !== '' && v != null && v !== undefined)
+              : (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === ''));
+
+            // Field is completed if:
+            // - Required: must not be empty and must be valid
+            // - Optional: always considered completed (empty is acceptable)
+            const isCompleted = isRequired 
+              ? (!isEmpty && control.valid)
+              : true; // Optional fields are always "completed" for progress
+
+            if (isCompleted) {
+              completedInputs++;
+            }
+            }
+          });
+        } else {
+          // Regular question - count as one input
+          const control = this.questionnaireForm.controls[q._id];
+          if (!control) return; // Skip if control doesn't exist
+
+          const validation = q.validation;
+          const isRequired = typeof validation !== 'string' && validation?.required;
+          const value = control.value;
+
+          // Count field if: required OR (optional AND countOptionalFields is true)
+          const countThisField = isRequired || countOptionalFields;
+          
+          if (countThisField) {
+            totalInputs++;
+            
+            // Check if field is completed
+            const isEmpty = Array.isArray(value)
+              ? !value.some(v => v !== '' && v != null && v !== undefined)
+              : (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === ''));
+
+            // Field is completed if:
+            // - Required: must not be empty and must be valid
+            // - Optional: always considered completed (empty is acceptable)
+            const isCompleted = isRequired 
+              ? (!isEmpty && control.valid)
+              : true; // Optional fields are always "completed" for progress
+
+            if (isCompleted) {
+              completedInputs++;
+            }
+          }
+        }
+      });
+    });
+
+    // Update progress values (using same variables for compatibility)
+    this.totalPages = totalInputs;
+    this.completedPages = completedInputs;
+    this.calculatePageProgressValue();
   }
 
   async startQuestioner() {
