@@ -9,7 +9,7 @@
     >
       <ng-template mat-tab-label>
         <mat-icon *ngIf="section.icon">{{ section.icon }}</mat-icon>
-        {{ section.name }} {{ apiConfig?.usePageQuestionsGrid }}
+        {{ section.name }}
       </ng-template>
       <span [id]="section.name" *ngIf="section.name">
         <lib-cards-questions
