@@ -823,6 +823,14 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  handleSubmitClick() {
+    if ((this.apiConfig?.showSaveDraftButton === true && this.pageProgressValue != 100) || (this.apiConfig?.showSaveDraftButton !== true && !this.questionnaireForm?.valid)) {
+      this.getQuestionMap();
+    } else {
+      this.submission('submit');
+    }
+  }
+
   async submission(status) {
     const evidenceData = this.questionnaireService.getEvidenceData(
       this.evidence,
@@ -839,6 +847,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
   async submitImageToCloud(payload: any, uploadQueue: any[]): Promise<any[]> {
     try {
+      this.setApiService();
       const response: any = await firstValueFrom(
         this.apiService.post(urlConfig.presignedUrl, payload)
       );

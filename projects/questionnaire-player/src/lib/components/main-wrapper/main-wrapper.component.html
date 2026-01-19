@@ -88,11 +88,7 @@
             </button>
             <button
               class="btn btn-primary mr-2"
-              (click)="
-                !questionnaireForm?.valid
-                  ? getQuestionMap()
-                  : submission('submit')
-              "
+              (click)="handleSubmitClick()"
             >
               Submit
             </button>
