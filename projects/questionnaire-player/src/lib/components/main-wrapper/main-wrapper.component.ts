@@ -832,6 +832,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async submission(status) {
+    this.setApiService();
     const evidenceData = this.questionnaireService.getEvidenceData(
       this.evidence,
       this.questionnaireForm.value
