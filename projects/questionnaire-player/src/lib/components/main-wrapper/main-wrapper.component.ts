@@ -104,17 +104,15 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   ) { }
 
   checkFormValidity() {
-    window.parent.postMessage({
+    this.sendMessage({
       type: 'formDirty',
       isDirty: this.questionnaireForm.dirty
     }, '*');
   }
 
-  sendProgressMessage() {
-    const message = { type: 'PROGRESS', data: { percentage: this.pageProgressValue, completedPages: this.completedPages, totalPages: this.totalPages} };
-    
+  sendMessage(message: any, target?: string) {
     // Dispatch custom event for web component listeners
-    const customEvent = new CustomEvent('progress', {
+    const customEvent = new CustomEvent('postMessage', {
       detail: message,
       bubbles: true,
       cancelable: true
@@ -122,7 +120,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     this.el.nativeElement.dispatchEvent(customEvent);
     
     // Keep window.postMessage for backward compatibility
-    window.postMessage(message, '*');
+    window.postMessage(message, target || '*');
   }
 
   async ngOnChanges(changes: SimpleChanges) {
@@ -1010,7 +1008,8 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   
             setTimeout(() => {
               // this.location.back();
-              window.parent.postMessage({
+
+              this.sendMessage({
                 type: 'submissionSuccess',
                 data: {
                   submissionId: this.submissionId,
@@ -1031,7 +1030,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
         this.formIsNotDirty();
         if (this.questionnaireForm.dirty && !this.isDateAutoSave) {
           const message = { type: 'PROGRAMS', data: 'Your changes have been saved.' };
-          window.postMessage(message, '*');
+          this.sendMessage(message, '*');
           this.toaster.showToast(`Your changes have been saved.`, 'success', 5000);
         }
         this.isDateAutoSave = false;
@@ -1336,7 +1335,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
   surveyExpired(data) {
     const message = { type: 'EXPIRED', data: data };
-    window.postMessage(message, '*');
+    this.sendMessage(message, '*');
   }
 
   calculatePageCompletion(submission: any) {
@@ -1398,7 +1397,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     this.pageProgressValue = this.totalPages > 0
     ? Math.round((this.completedPages / this.totalPages) * 100)
     : 0;
-    this.sendProgressMessage();
+    this.sendMessage({ type: 'PROGRESS', data: { percentage: this.pageProgressValue, completedPages: this.completedPages, totalPages: this.totalPages} });
   }
 
   calculateInitialProgress() {
@@ -1550,7 +1549,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
     if (observationAsTask || isATargetedSolution) {
       const message = { type: 'START', data: this.stateData };
-      window.postMessage(message, '*');
+      this.sendMessage(message, '*');
     } 
     else {
       this.toaster.showToast(
