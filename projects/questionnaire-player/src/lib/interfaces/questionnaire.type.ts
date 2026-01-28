@@ -135,6 +135,7 @@ export interface Question {
   pageQuestions: Question[];
   // Entity dropdown configuration
   entityConfig?: EntityConfig;
+  readonly?: boolean; // If true, the question input is readonly
 }
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
@@ -222,6 +223,11 @@ export interface EntityConfig {
   multiSelect?: boolean;
 }
 
+export interface DefaultValueConfig {
+  value: string | string[] | number;
+  readonly: boolean;
+}
+
 export interface ApiConfiguration{
   profileData?: any;
   baseURL:string;
@@ -237,6 +243,7 @@ export interface ApiConfiguration{
   index:any;
   stateData:any;
   mockData?: any;
+  defaultValues?: { [questionId: string]: DefaultValueConfig }; // Map of question IDs to default values and readonly state
   usePageQuestionsGrid?: boolean; // If true, use lib-page-questions-grid for pageQuestions, otherwise use lib-main
   enablePagination?: boolean; // If false, display all page groups as cards instead of paginating
   gridCount?: number; // If provided, use grid layout with specified number of columns

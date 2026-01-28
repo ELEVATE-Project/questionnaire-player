@@ -455,7 +455,8 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
         this.calculateInitialProgress();
       }, 500);
       
-      this.loaded = true;
+      // Apply default values after page loads, then set loaded = true
+      await this.applyDefaultValuesAfterLoad();
     }
     return currentObservation ? true : false;
   }
@@ -522,10 +523,127 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       );
       this.isExpired = this.assessment?.assessment?.status == 'expired';
       this.sections = this.evidence?.sections;
-      this.loaded = true;
+      
+      // Apply default values after page loads, then set loaded = true
+      await this.applyDefaultValuesAfterLoad();
     } else {
-      this.loaded = true;
+      // Apply default values after page loads, then set loaded = true
+      await this.applyDefaultValuesAfterLoad();
     }
+  }
+
+  /**
+   * Apply default values to assessment.submissions after page loads
+   */
+  async applyDefaultValuesAfterLoad() {
+    // Wait for everything to be ready
+    if (!this.assessment || !this.evidence || !this.evidenceCode || !this.sections) {
+      setTimeout(() => this.applyDefaultValuesAfterLoad(), 500);
+      return;
+    }
+
+    // Check if defaultValues exist
+    if (this.apiConfig?.defaultValues) {
+      // Ensure submissions object exists
+      if (!this.assessment.assessment.submissions) {
+        this.assessment.assessment.submissions = {};
+      }
+      
+      // Ensure submission for this evidenceCode exists
+      if (!this.assessment.assessment.submissions[this.evidenceCode]) {
+        this.assessment.assessment.submissions[this.evidenceCode] = {
+          externalId: this.evidenceCode,
+          answers: {},
+          startTime: Date.now(),
+          endTime: this.endDate || null,
+          gpsLocation: null,
+          submittedBy: '',
+          submittedByName: '',
+          submissionDate: new Date().toISOString(),
+          isValid: true,
+          status: 'draft',
+          progressStatus: 'notStarted',
+          pageProgressValue: 0,
+          completePercentage: 0
+        };
+      }
+
+      // Ensure answers object exists
+      if (!this.assessment.assessment.submissions[this.evidenceCode].answers) {
+        this.assessment.assessment.submissions[this.evidenceCode].answers = {};
+      }
+
+      // Apply default values to submissions AND question objects
+      Object.keys(this.apiConfig.defaultValues).forEach(qId => {
+        const defaultConfig = this.apiConfig.defaultValues[qId];
+        if (defaultConfig?.value !== undefined && defaultConfig?.value !== null) {
+          const valueToSet = typeof defaultConfig.value === 'number' 
+            ? String(defaultConfig.value) 
+            : defaultConfig.value;
+          
+          // Find question to set value and get responseType
+          let questionFound = null;
+          let responseType = 'text';
+          
+          for (const section of this.sections || []) {
+            for (const question of section.questions || []) {
+              if (question._id === qId) {
+                questionFound = question;
+                responseType = question.responseType;
+                // Set value on question object so it appears in form
+                question.value = valueToSet;
+                question.readonly = defaultConfig.readonly === true;
+                break;
+              }
+              // Check pageQuestions
+              if (question.pageQuestions) {
+                for (const pq of question.pageQuestions) {
+                  if (pq._id === qId) {
+                    questionFound = pq;
+                    responseType = pq.responseType;
+                    // Set value on pageQuestion object
+                    pq.value = valueToSet;
+                    pq.readonly = defaultConfig.readonly === true;
+                    break;
+                  }
+                }
+              }
+            }
+          }
+          
+          // Only set in submissions if answer doesn't already exist
+          if (!this.assessment.assessment.submissions[this.evidenceCode].answers[qId]) {
+            this.assessment.assessment.submissions[this.evidenceCode].answers[qId] = {
+              value: valueToSet,
+              remarks: '',
+              fileName: [],
+              endTime: Date.now(),
+              responseType: responseType
+            };
+          }
+          
+          // Update form control if it exists
+          if (this.questionnaireForm && this.questionnaireForm.controls[qId]) {
+            const control = this.questionnaireForm.controls[qId];
+            control.setValue(valueToSet, { emitEvent: false });
+            if (defaultConfig.readonly === true) {
+              control.disable();
+            }
+          }
+        }
+      });
+
+      // Update IndexDB with default values
+      const submissionData = {
+        status: 'draft',
+        answers: this.assessment.assessment.submissions[this.evidenceCode].answers
+      };
+      await this.updateDataInIndexDb(submissionData);
+      console.log('update');
+    }
+
+    // Set loaded = true after applying default values
+    this.loaded = true;
   }
 
   getIncompleteFields() {
@@ -1329,7 +1447,9 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       );
       this.isExpired = this.assessment?.assessment?.status == 'expired';
       this.sections = this.evidence?.sections;
-      this.loaded = true;
+      
+      // Apply default values after page loads, then set loaded = true
+      await this.applyDefaultValuesAfterLoad();
     }
   }
 

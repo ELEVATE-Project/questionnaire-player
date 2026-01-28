@@ -44,7 +44,8 @@
       margin: question.responseType != 'pageQuestions' && apiConfig?.usePageQuestionsGrid === true ? '0.5rem' : 0
     }" [ngClass]="{
       'mat-elevation-z8': question.responseType != 'pageQuestions' && apiConfig?.usePageQuestionsGrid === true,
-      activeCard: question.responseType != 'pageQuestions' && apiConfig?.usePageQuestionsGrid === true , 'submitted' : (isSubmitted || isExpired)
+      activeCard: question.responseType != 'pageQuestions' && apiConfig?.usePageQuestionsGrid === true,
+      'submitted': (isSubmitted || isExpired || question.readonly === true)
     }" class="responsive-margin" *ngIf="!question.visibleIf?.length || question.canDisplay == true">
     <div [ngClass]="{ content: question.responseType != 'pageQuestions' && apiConfig?.usePageQuestionsGrid === true }" [ngClass]="{'d-flex flex-dr flex-gap-10 flex-jc-space-between': apiConfig?.labelInputHorizontalLayout === true}">
       <div class="spaceBetweenContent">
