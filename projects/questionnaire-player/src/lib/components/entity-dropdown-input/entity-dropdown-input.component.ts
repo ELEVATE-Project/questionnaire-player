@@ -3,7 +3,7 @@ import { FormControl, FormGroup, FormArray, Validators } from '@angular/forms';
 import { Question, Validation } from '../../interfaces/questionnaire.type';
 import { QuestionnaireService } from '../../services/questionnaire.service';
 import { ApiService } from '../../services/api.service';
-import { HttpParams } from '@angular/common/http';
+import { HttpParams, HttpHeaders } from '@angular/common/http';
 import { Subject, debounceTime, distinctUntilChanged, switchMap, catchError } from 'rxjs';
 import { takeUntil } from 'rxjs/operators';
 import { of } from 'rxjs';
@@ -71,7 +71,7 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
   ) {}
 
   get isMultiSelect(): boolean {
-    return this.question.entityConfig?.multiSelect === true;
+    return this.question.responseType === 'multiselect';
   }
 
   ngOnInit() {
@@ -139,8 +139,11 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
       });
 
     // Load initial data if dropdown is opened
-    if (this.question.entityConfig?.paginationEnabled !== false) {
-      this.pageSize = 20;
+    const metaConfig = this.getMetaConfig();
+    if (metaConfig?.paginationEnabled !== false) {
+      this.pageSize = metaConfig?.pagination?.defaultLimit || 20;
+    } else {
+      this.pageSize = metaConfig?.pagination?.defaultLimit || 20;
     }
   }
 
@@ -159,8 +162,94 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
     return url.startsWith('http://') || url.startsWith('https://');
   }
 
+  /**
+   * Get metaInformation config
+   */
+  private getMetaConfig(): any {
+    return (this.question as any).metaInformation?.config;
+  }
+
+  /**
+   * Validate config and check for missing required values
+   */
+  private validateConfig(): { isValid: boolean; missingFields: string[] } {
+    const metaConfig = this.getMetaConfig();
+    const missingFields: string[] = [];
+
+    // Check if apiEndPoint is configured
+    if (!metaConfig?.apiEndPoint) {
+      missingFields.push('apiEndPoint');
+    }
+
+    // Check if baseUrl is available when apiDomain is empty
+    if (!metaConfig?.apiDomain && !this.apiService.baseUrl) {
+      missingFields.push('baseUrl');
+    }
+
+    return {
+      isValid: missingFields.length === 0,
+      missingFields
+    };
+  }
+
+  /**
+   * Check if API endpoint is configured in metaInformation.config.apiEndPoint
+   */
+  private hasApiEndpoint(): boolean {
+    const metaConfig = this.getMetaConfig();
+    return !!metaConfig?.apiEndPoint;
+  }
+
+  /**
+   * Build HTTP headers with x-auth-token from apiConfig
+   */
+  private buildHeaders(): HttpHeaders {
+    const token = this.apiService.userAuthToken || this.apiService.token;
+    const headers: { [key: string]: string } = {};
+    
+    if (token) {
+      headers['x-auth-token'] = token;
+    }
+    
+    return new HttpHeaders(headers);
+  }
+
+  /**
+   * Build the API URL based on apiDomain and apiEndPoint configuration
+   * If apiDomain is empty, use apiService.baseUrl
+   */
+  private buildApiUrl(): string {
+    const metaConfig = this.getMetaConfig();
+    const apiDomain = metaConfig?.apiDomain;
+    const apiEndPoint = metaConfig?.apiEndPoint;
+    
+    if (!apiEndPoint) {
+      return '';
+    }
+    
+    // If apiDomain is provided and not empty, use apiDomain + apiEndPoint
+    if (apiDomain && apiDomain.trim() !== '') {
+      return apiDomain + apiEndPoint;
+    }
+    
+    // If apiEndPoint is already a full URL, return it as is
+    if (this.isFullUrl(apiEndPoint)) {
+      return apiEndPoint;
+    }
+    
+    // Otherwise, construct URL using baseUrl + endpoint
+    return this.apiService.baseUrl ? this.apiService.baseUrl + apiEndPoint : apiEndPoint;
+  }
+
   fetchEntities() {
-    if (!this.question.entityConfig?.api) {
+    // Validate config first
+    const validation = this.validateConfig();
+    if (!validation.isValid) {
+      this.errorMessage = `Missing required configuration: ${validation.missingFields.join(', ')}`;
+      return;
+    }
+
+    if (!this.hasApiEndpoint()) {
       this.errorMessage = 'API endpoint not configured';
       return;
     }
@@ -168,21 +257,41 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
     this.isLoading = true;
     this.errorMessage = '';
 
-    // Calculate skip based on current page: skip = (currentPage - 1) * pageSize
-    const skip = (this.currentPage - 1) * this.pageSize;
-    let params = new HttpParams()
-      .set('skip', skip.toString())
-      .set('limit', this.pageSize.toString());
-
-    if (this.searchTerm && this.question.entityConfig?.searchEnabled !== false) {
-      params = params.set('q', this.searchTerm);
+    const metaConfig = this.getMetaConfig();
+    const paginationConfig = metaConfig?.pagination;
+    const searchConfig = metaConfig?.search;
+    
+    // Use pagination config if available, otherwise use defaults
+    const pageSize = paginationConfig?.defaultLimit || this.pageSize;
+    const skip = (this.currentPage - 1) * pageSize;
+    
+    let params = new HttpParams();
+    
+    // Add pagination params based on config
+    if (metaConfig?.paginationEnabled !== false) {
+      const pageParam = paginationConfig?.pageParam || 'page';
+      const limitParam = paginationConfig?.limitParam || 'limit';
+      params = params.set(pageParam, this.currentPage.toString());
+      params = params.set(limitParam, pageSize.toString());
+    } else {
+      // Fallback to skip/limit if pagination config not available
+      params = params.set('skip', skip.toString());
+      params = params.set('limit', pageSize.toString());
     }
 
-    const apiUrl = this.question.entityConfig.api;
+    // Add search params based on config
+    if (this.searchTerm && metaConfig?.searchEnabled !== false) {
+      const searchParam = searchConfig?.param || 'q';
+      params = params.set(searchParam, this.searchTerm);
+    }
+
+    const apiUrl = this.buildApiUrl();
+    const headers = this.buildHeaders();
+    
     // Use full URL method if API is a complete URL, otherwise use relative path
     const apiCall = this.isFullUrl(apiUrl)
-      ? this.apiService.getWithFullURL<ApiResponse>(apiUrl, params)
-      : this.apiService.get<ApiResponse>(apiUrl, params);
+      ? this.apiService.getWithFullURL<ApiResponse>(apiUrl, params, headers)
+      : this.apiService.get<ApiResponse>(apiUrl, params, headers);
 
     apiCall
       .pipe(
@@ -226,8 +335,9 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
         }
 
         // Check if there are more pages
-        this.hasMore = this.options.length < totalCount && 
-                      (this.question.entityConfig?.paginationEnabled !== false);
+        const metaConfig = this.getMetaConfig();
+        const paginationEnabled = metaConfig?.paginationEnabled !== false;
+        this.hasMore = paginationEnabled && this.options.length < totalCount;
 
         this.filteredOptions = this.options;
       });
@@ -323,8 +433,14 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
   }
 
   mapResponseToOptions(data: any[]): EntityOption[] {
-    const labelKey = this.question.entityConfig?.labelKey || 'name';
-    const valueKey = this.question.entityConfig?.valueKey || 'id';
+    const metaConfig = this.getMetaConfig();
+    const mapping = metaConfig?.mapping || {};
+    // Remove quotes from label if it's wrapped in quotes (e.g., "\"name,' - ',status\"")
+    let labelKey = mapping?.label || 'name';
+    if (labelKey.startsWith('"') && labelKey.endsWith('"')) {
+      labelKey = labelKey.slice(1, -1);
+    }
+    const valueKey = mapping?.value || 'id';
 
     return data.map((item) => ({
       label: this.parseLabelKey(item, labelKey) || String(this.getNestedValue(item, valueKey)),
@@ -495,7 +611,7 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
   }
 
   fetchSelectedOption(selectedValue: string) {
-    if (!selectedValue || !this.question.entityConfig?.api) {
+    if (!selectedValue || !this.hasApiEndpoint()) {
       return;
     }
 
@@ -507,14 +623,26 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
     }
 
     // Load first page and check if selected value is there
-    const params = new HttpParams()
-      .set('skip', '0')
-      .set('limit', this.pageSize.toString());
+    const metaConfig = this.getMetaConfig();
+    const paginationConfig = metaConfig?.pagination;
+    const pageSize = paginationConfig?.defaultLimit || this.pageSize;
     
-    const apiUrl = this.question.entityConfig.api;
+    let params = new HttpParams();
+    if (metaConfig?.paginationEnabled !== false && paginationConfig) {
+      const pageParam = paginationConfig?.pageParam || 'page';
+      const limitParam = paginationConfig?.limitParam || 'limit';
+      params = params.set(pageParam, '1');
+      params = params.set(limitParam, pageSize.toString());
+    } else {
+      params = params.set('skip', '0');
+      params = params.set('limit', pageSize.toString());
+    }
+    
+    const apiUrl = this.buildApiUrl();
+    const headers = this.buildHeaders();
     const apiCall = this.isFullUrl(apiUrl)
-      ? this.apiService.getWithFullURL<ApiResponse>(apiUrl, params)
-      : this.apiService.get<ApiResponse>(apiUrl, params);
+      ? this.apiService.getWithFullURL<ApiResponse>(apiUrl, params, headers)
+      : this.apiService.get<ApiResponse>(apiUrl, params, headers);
 
     apiCall
       .pipe(
@@ -543,9 +671,10 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
           } else {
             // If not found in first page, try fetching by ID if API supports it
             const idParams = new HttpParams().set('id', selectedValue);
+            const idHeaders = this.buildHeaders();
             const idApiCall = this.isFullUrl(apiUrl)
-              ? this.apiService.getWithFullURL<ApiResponse>(apiUrl, idParams)
-              : this.apiService.get<ApiResponse>(apiUrl, idParams);
+              ? this.apiService.getWithFullURL<ApiResponse>(apiUrl, idParams, idHeaders)
+              : this.apiService.get<ApiResponse>(apiUrl, idParams, idHeaders);
             
             idApiCall
               .pipe(
@@ -578,19 +707,31 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
   }
 
   fetchSelectedOptions(selectedValues: string[]) {
-    if (!selectedValues.length || !this.question.entityConfig?.api) {
+    if (!selectedValues.length || !this.hasApiEndpoint()) {
       return;
     }
 
     // Load first page and check if selected values are there
-    const params = new HttpParams()
-      .set('skip', '0')
-      .set('limit', this.pageSize.toString());
+    const metaConfig = this.getMetaConfig();
+    const paginationConfig = metaConfig?.pagination;
+    const pageSize = paginationConfig?.defaultLimit || this.pageSize;
     
-    const apiUrl = this.question.entityConfig.api;
+    let params = new HttpParams();
+    if (metaConfig?.paginationEnabled !== false && paginationConfig) {
+      const pageParam = paginationConfig?.pageParam || 'page';
+      const limitParam = paginationConfig?.limitParam || 'limit';
+      params = params.set(pageParam, '1');
+      params = params.set(limitParam, pageSize.toString());
+    } else {
+      params = params.set('skip', '0');
+      params = params.set('limit', pageSize.toString());
+    }
+    
+    const apiUrl = this.buildApiUrl();
+    const headers = this.buildHeaders();
     const apiCall = this.isFullUrl(apiUrl)
-      ? this.apiService.getWithFullURL<ApiResponse>(apiUrl, params)
-      : this.apiService.get<ApiResponse>(apiUrl, params);
+      ? this.apiService.getWithFullURL<ApiResponse>(apiUrl, params, headers)
+      : this.apiService.get<ApiResponse>(apiUrl, params, headers);
 
     apiCall
       .pipe(
@@ -650,7 +791,18 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
   }
 
   get modalTitle(): string {
-    const entityType = this.question.entityConfig?.entityType || 'Participants';
+    const metaConfig = this.getMetaConfig();
+    const entityType = metaConfig?.entityType || 'Participants';
     return `Select ${entityType}`;
+  }
+
+  get searchEnabled(): boolean {
+    const metaConfig = this.getMetaConfig();
+    return metaConfig?.searchEnabled !== false;
+  }
+
+  get paginationEnabled(): boolean {
+    const metaConfig = this.getMetaConfig();
+    return metaConfig?.paginationEnabled !== false;
   }
 }

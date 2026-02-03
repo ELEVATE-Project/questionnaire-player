@@ -1,6 +1,6 @@
 import { Component, EventEmitter, Input, OnInit, Output } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { Question } from '../../interfaces/questionnaire.type';
+import { Question, DisplayType } from '../../interfaces/questionnaire.type';
 import { QuestionnaireService } from '../../services/questionnaire.service';
 
 @Component({
@@ -94,10 +94,11 @@ export class SelectDropdownInputComponent implements OnInit {
   }
 
   get isMultiSelect(): boolean {
-    // Check if multi-select is enabled via responseType or options configuration
-    // Supports: multiselect-dropdown, multiselect, or options.multiSelect flag
-    return this.question.responseType === 'multiselect-dropdown' ||
-           this.question.responseType === 'multiselect' || 
+    // Check if multi-select is enabled via displayType, responseType or options configuration
+    // Supports: multiselect-dropdown (via displayType), multiselect (via responseType), or options.multiSelect flag
+    return this.question.displayType === DisplayType.MULTISELECT_DROPDOWN ||
+           (this.question.responseType as string) === 'multiselect-dropdown' ||
+           (this.question.responseType as string) === 'multiselect' || 
            (this.question.options && typeof this.question.options === 'object' && this.question.options.multiSelect === true);
   }
 }

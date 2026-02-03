@@ -84,6 +84,7 @@ export interface Section {
 
 export interface Question {
   _id: string;
+  placeHolder: string;
   icon?: string;
   question: string;
   isCompleted: boolean;
@@ -116,6 +117,7 @@ export interface Question {
   tip: string;
   hint: string;
   responseType: ResponseType;
+  displayType?: DisplayType; // Optional display type that overrides responseType for rendering
   modeOfCollection: string;
   accessibility: string;
   rubricLevel: string;
@@ -163,6 +165,9 @@ export enum ResponseType {
   PAGEQUESTIONS = 'pageQuestions',
   MATRIX = 'matrix',
   TEXTAREA='textDescription',
+}
+
+export enum DisplayType {
   FILE_UPLOAD = 'fileUpload',
   ENTITY_DROPDOWN = 'entity-dropdown',
   SELECT_DROPDOWN = 'select-dropdown',

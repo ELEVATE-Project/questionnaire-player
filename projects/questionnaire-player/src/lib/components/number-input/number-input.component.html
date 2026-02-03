@@ -10,7 +10,7 @@
     type="number"
     [formControlName]="question?._id"
     min="0"
-    [placeholder]="placeholder"
+    [placeholder]="question.placeHolder || placeholder"
     (change)="onChange($event)"
     [value]="question.value"
   />

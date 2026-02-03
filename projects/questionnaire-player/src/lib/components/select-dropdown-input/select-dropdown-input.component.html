@@ -9,7 +9,7 @@
       *ngIf="!isMultiSelect"
       [formControlName]="question._id"
       (selectionChange)="onChange($event.value)"
-      [placeholder]="'Select an option'"
+      [placeholder]="question.placeHolder || 'Select an option'"
     >
       <mat-option *ngFor="let option of options" [value]="option.value">
         {{ option.label }}
@@ -21,7 +21,7 @@
       *ngIf="isMultiSelect"
       [formControlName]="question._id"
       (selectionChange)="onChange($event.value)"
-      [placeholder]="'Select options'"
+      [placeholder]="question.placeHolder || 'Select options'"
       multiple
     >
       <mat-option *ngFor="let option of options" [value]="option.value">

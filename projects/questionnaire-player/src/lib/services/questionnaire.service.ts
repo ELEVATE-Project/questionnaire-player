@@ -3,6 +3,7 @@ import { ValidatorFn, AbstractControl } from '@angular/forms';
 import {
   Question,
   ResponseType,
+  DisplayType,
   Evidence,
 } from '../interfaces/questionnaire.type';
 
@@ -42,7 +43,7 @@ export class QuestionnaireService {
               ? null
               : { err: 'Select at least one option' };
           }
-          if (data.responseType == ResponseType.ENTITY_DROPDOWN && data.entityConfig?.multiSelect) {
+          if ((data.displayType == DisplayType.ENTITY_DROPDOWN || (data.responseType as string) == 'entity-dropdown') && data.entityConfig?.multiSelect) {
             // Entity dropdown with multi-select uses FormArray
             return control.value.some((v) => v != '' && v != null && v != undefined)
               ? null

@@ -13,6 +13,7 @@
         [formControlName]="question?._id"
         [matDatepicker]="picker"
         (dateChange)="onChange($event)"
+        [placeholder]="question.placeHolder || 'Select a date'"
       />
       <mat-datepicker-toggle
         matIconSuffix

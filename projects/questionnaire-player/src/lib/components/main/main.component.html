@@ -76,23 +76,57 @@
         </ng-container>
         <lib-number-input  tabindex="-1"  [id]="question._id" *ngIf="question.responseType == reponseType.NUMBER" [questionnaireForm]="questionnaireForm"
           [question]="question"></lib-number-input>
-        <lib-radio-input tabindex="-1" [id]="question._id" *ngIf="question.responseType == reponseType.RADIO" [questionnaireForm]="questionnaireForm"
+        <lib-radio-input
+          tabindex="-1"
+          [id]="question._id"
+          *ngIf="
+            question.responseType == reponseType.RADIO &&
+            (!(displayTypeArray.includes(question.displayType))) &&
+            question.requireDynamicAnswers !== true
+          "
+          [questionnaireForm]="questionnaireForm"
           [question]="question" [options]="question.options"
           (dependentParent)="toggleQuestion($event)"></lib-radio-input>
-        <lib-checkbox-input tabindex="-1" [id]="question._id" *ngIf="question.responseType == reponseType.MULTISELECT"
-          [questionnaireForm]="questionnaireForm" [question]="question" [options]="question.options"
-          (dependentParent)="toggleQuestion($event)"></lib-checkbox-input>
+        <lib-checkbox-input tabindex="-1" [id]="question._id"
+          *ngIf="
+            question.responseType == reponseType.MULTISELECT &&
+            (!displayTypeArray.includes(question.displayType))
+          "
+          [questionnaireForm]="questionnaireForm"
+          [question]="question"
+          [options]="question.options"
+          (dependentParent)="toggleQuestion($event)">
+        </lib-checkbox-input>
         <lib-range-input tabindex="-1" [id]="question._id" *ngIf="question.responseType == reponseType.SLIDER" [questionnaireForm]="questionnaireForm"
           [question]="question"></lib-range-input>
         <lib-date-input [id]="question._id" tabindex="-1" *ngIf="question.responseType == reponseType.DATE" [questionnaireForm]="questionnaireForm"
           [question]="question"></lib-date-input>
-        <lib-entity-dropdown-input [id]="question._id" tabindex="-1" *ngIf="question.responseType == reponseType.ENTITY_DROPDOWN" [questionnaireForm]="questionnaireForm"
+        <lib-entity-dropdown-input [id]="question._id" tabindex="-1"
+          *ngIf="
+            question.requireDynamicAnswers === true &&
+            (question.responseType == reponseType.RADIO || question.responseType == reponseType.MULTISELECT)
+          "
+          [questionnaireForm]="questionnaireForm"
           [question]="question" (dependentParent)="toggleQuestion($event)"></lib-entity-dropdown-input>
-        <lib-select-dropdown-input [id]="question._id" tabindex="-1" *ngIf="question.responseType == reponseType.SELECT_DROPDOWN" [questionnaireForm]="questionnaireForm"
+        <lib-select-dropdown-input [id]="question._id" tabindex="-1"
+          *ngIf="
+            question.responseType == reponseType.RADIO &&
+            question.displayType == displayType.SELECT_DROPDOWN"
+          [questionnaireForm]="questionnaireForm"
           [question]="question" [options]="question.options" (dependentParent)="toggleQuestion($event)"></lib-select-dropdown-input>
-        <lib-select-dropdown-input [id]="question._id" tabindex="-1" *ngIf="question.responseType == reponseType.MULTISELECT_DROPDOWN" [questionnaireForm]="questionnaireForm"
+        <lib-select-dropdown-input [id]="question._id" tabindex="-1"
+          *ngIf="
+            question.responseType == reponseType.MULTISELECT &&
+            question.displayType == displayType.MULTISELECT_DROPDOWN"
+          [questionnaireForm]="questionnaireForm"
           [question]="question" [options]="question.options" (dependentParent)="toggleQuestion($event)"></lib-select-dropdown-input>
-        <lib-file-upload-input [id]="question._id" tabindex="-1" *ngIf="question.responseType == reponseType.FILE_UPLOAD" [questionnaireForm]="questionnaireForm"
+        <lib-file-upload-input [id]="question._id" tabindex="-1"
+          *ngIf="
+            (question.responseType == reponseType.RADIO ||
+            question.responseType == reponseType.MULTISELECT) &&
+            question.displayType == displayType.FILE_UPLOAD
+          "
+          [questionnaireForm]="questionnaireForm"
           [question]="question" [fileSizeLimit]="fileSizeLimit"></lib-file-upload-input>
         <lib-matrix-questions *ngIf="question.responseType == reponseType.MATRIX"
           [questionnaireForm]="questionnaireForm" [question]="question" #libMatrix>
@@ -102,7 +136,7 @@
           </ng-template>
         </lib-matrix-questions>
         <lib-remarks [question]="question" *ngIf="question.showRemarks"></lib-remarks>
-        <lib-attachment *ngIf="question.file && question.responseType != reponseType.FILE_UPLOAD" [fileSizeLimit]="fileSizeLimit" [data]="{
+        <lib-attachment *ngIf="question.file && question.responseType != 'fileUpload' && question.displayType != displayType.FILE_UPLOAD" [fileSizeLimit]="fileSizeLimit" [data]="{
             submissionId: qService.getSubmissionId(),
             files: question.fileName
           }" [questionId]="question._id + qi" [fileSizeLimit]="fileSizeLimit" [questionFile]="question.file">

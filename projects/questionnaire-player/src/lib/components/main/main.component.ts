@@ -6,7 +6,7 @@ import {
   TemplateRef,
   ViewChild,
 } from '@angular/core';
-import { Question, ResponseType, ApiConfiguration } from '../../interfaces/questionnaire.type';
+import { Question, ResponseType, DisplayType, ApiConfiguration } from '../../interfaces/questionnaire.type';
 import { FormBuilder, FormGroup } from '@angular/forms';
 import { DialogComponent } from '../dialog/dialog.component';
 import { QuestionnaireService } from '../../services/questionnaire.service';
@@ -44,6 +44,14 @@ export class MainComponent implements OnInit, AfterViewInit {
 
   public get reponseType(): typeof ResponseType {
     return ResponseType;
+  }
+
+  public get displayType(): typeof DisplayType {
+    return DisplayType;
+  }
+
+  public get displayTypeArray(): string[] {
+    return Object.values(DisplayType);
   }
 
   ngOnInit(): void {
