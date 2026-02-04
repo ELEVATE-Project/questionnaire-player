@@ -180,9 +180,8 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
     if (!metaConfig?.apiEndPoint) {
       missingFields.push('apiEndPoint');
     }
-
-    // Check if baseUrl is available when apiDomain is empty
-    if (!metaConfig?.apiDomain && !this.apiService.baseUrl) {
+    // Check if baseUrl is available  when apiDomain is empty
+    if (!metaConfig?.apiDomain) {
       missingFields.push('baseUrl');
     }
 
