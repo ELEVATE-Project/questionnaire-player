@@ -102,7 +102,7 @@
           [question]="question"></lib-range-input>
         <lib-date-input [id]="question._id" tabindex="-1" *ngIf="question.responseType == reponseType.DATE" [questionnaireForm]="questionnaireForm"
           [question]="question"></lib-date-input>
-        <lib-entity-dropdown-input [id]="question._id" tabindex="-1"
+        <lib-entity-dropdown-input [apiConfig]="apiConfig" [id]="question._id" tabindex="-1"
           *ngIf="
             question.requireDynamicAnswers === true &&
             (question.responseType == reponseType.RADIO || question.responseType == reponseType.MULTISELECT)

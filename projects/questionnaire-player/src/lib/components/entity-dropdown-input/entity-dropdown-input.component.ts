@@ -1,6 +1,6 @@
-import { Component, Input, Output, OnInit, OnDestroy, ViewChild, ElementRef, HostListener, EventEmitter, TemplateRef } from '@angular/core';
-import { FormControl, FormGroup, FormArray, Validators } from '@angular/forms';
-import { Question, Validation } from '../../interfaces/questionnaire.type';
+import { Component, Input, Output, OnInit, OnDestroy, ViewChild, EventEmitter, TemplateRef } from '@angular/core';
+import { FormControl, FormGroup, FormArray } from '@angular/forms';
+import { Question, ApiConfiguration } from '../../interfaces/questionnaire.type';
 import { QuestionnaireService } from '../../services/questionnaire.service';
 import { ApiService } from '../../services/api.service';
 import { HttpParams, HttpHeaders } from '@angular/common/http';
@@ -38,6 +38,7 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
   @Input() questionnaireForm: FormGroup;
   @Input() question: Question;
   @Output() dependentParent = new EventEmitter<Question>();
+  @Input() apiConfig: ApiConfiguration;
   @ViewChild('modalTemplate') modalTemplate: TemplateRef<any>;
 
   // Multi-select support
@@ -181,8 +182,8 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
       missingFields.push('apiEndPoint');
     }
     // Check if baseUrl is available  when apiDomain is empty
-    if (!metaConfig?.apiDomain) {
-      missingFields.push('baseUrl');
+    if (!metaConfig?.apiDomain && !this.apiConfig?.baseURL) {
+      missingFields.push('baseURL');
     }
 
     return {
@@ -203,7 +204,7 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
    * Build HTTP headers with x-auth-token from apiConfig
    */
   private buildHeaders(): HttpHeaders {
-    const token = this.apiService.userAuthToken || this.apiService.token;
+    const token = this.apiConfig?.userAuthToken || this.apiConfig?.["token"];
     const headers: { [key: string]: string } = {};
     
     if (token) {
@@ -237,7 +238,7 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
     }
     
     // Otherwise, construct URL using baseUrl + endpoint
-    return this.apiService.baseUrl ? this.apiService.baseUrl + apiEndPoint : apiEndPoint;
+    return this.apiConfig?.baseURL ? this.apiConfig?.baseURL + apiEndPoint : apiEndPoint;
   }
 
   fetchEntities() {
@@ -627,15 +628,15 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
     const pageSize = paginationConfig?.defaultLimit || this.pageSize;
     
     let params = new HttpParams();
-    if (metaConfig?.paginationEnabled !== false && paginationConfig) {
-      const pageParam = paginationConfig?.pageParam || 'page';
-      const limitParam = paginationConfig?.limitParam || 'limit';
-      params = params.set(pageParam, '1');
-      params = params.set(limitParam, pageSize.toString());
-    } else {
-      params = params.set('skip', '0');
-      params = params.set('limit', pageSize.toString());
-    }
+    // if (metaConfig?.paginationEnabled !== false && paginationConfig) {
+    //   const pageParam = paginationConfig?.pageParam || 'page';
+    //   const limitParam = paginationConfig?.limitParam || 'limit';
+    //   params = params.set(pageParam, '1');
+    //   params = params.set(limitParam, pageSize.toString());
+    // } else {
+    //   params = params.set('skip', '0');
+    //   params = params.set('limit', pageSize.toString());
+    // }
     
     const apiUrl = this.buildApiUrl();
     const headers = this.buildHeaders();
@@ -716,15 +717,15 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
     const pageSize = paginationConfig?.defaultLimit || this.pageSize;
     
     let params = new HttpParams();
-    if (metaConfig?.paginationEnabled !== false && paginationConfig) {
-      const pageParam = paginationConfig?.pageParam || 'page';
-      const limitParam = paginationConfig?.limitParam || 'limit';
-      params = params.set(pageParam, '1');
-      params = params.set(limitParam, pageSize.toString());
-    } else {
-      params = params.set('skip', '0');
-      params = params.set('limit', pageSize.toString());
-    }
+    // if (metaConfig?.paginationEnabled !== false && paginationConfig) {
+    //   const pageParam = paginationConfig?.pageParam || 'page';
+    //   const limitParam = paginationConfig?.limitParam || 'limit';
+    //   params = params.set(pageParam, '1');
+    //   params = params.set(limitParam, pageSize.toString());
+    // } else {
+    //   params = params.set('skip', '0');
+    //   params = params.set('limit', pageSize.toString());
+    // }
     
     const apiUrl = this.buildApiUrl();
     const headers = this.buildHeaders();

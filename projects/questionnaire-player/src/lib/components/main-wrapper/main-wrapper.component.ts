@@ -794,7 +794,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
                 !this.questionnaireForm.controls[
                   this.sections[sectionIndex].questions[questionIndex]
                     .pageQuestions[pqIndex]._id
-                ].valid
+                ]?.valid
               ) {
                 value = [];
               }
@@ -838,7 +838,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
             if (
               !this.questionnaireForm.controls[
                 this.sections[sectionIndex].questions[questionIndex]._id
-              ].valid
+              ]?.valid
             ) {
               value = [];
             }
@@ -1609,7 +1609,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
             // - Required: must not be empty and must be valid
             // - Optional: always considered completed (empty is acceptable)
             const isCompleted = isRequired 
-              ? (!isEmpty && control.valid)
+              ? (!isEmpty && control?.valid)
               : true; // Optional fields are always "completed" for progress
 
             if (isCompleted) {
@@ -1641,7 +1641,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
             // - Required: must not be empty and must be valid
             // - Optional: always considered completed (empty is acceptable)
             const isCompleted = isRequired 
-              ? (!isEmpty && control.valid)
+              ? (!isEmpty && control?.valid)
               : true; // Optional fields are always "completed" for progress
 
             if (isCompleted) {
