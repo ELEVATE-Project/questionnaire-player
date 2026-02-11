@@ -1,3 +1,18 @@
+<div class="d-flex flex-jc-flex-end mb-10">
+  <button
+  type="button"
+  class="btn-outline-secondary"
+  (click)="openModal()"
+>
+  <mat-icon>add</mat-icon>
+  <span *ngIf="!isMultiSelect || (isMultiSelect && selectedOptions.length === 0)">Add</span>
+  <span *ngIf="isMultiSelect && selectedOptions.length > 0">Added</span>
+  <!-- Show count in button for multi-select -->
+  <span *ngIf="isMultiSelect && selectedOptions.length > 0" class="button-count">
+    ({{ selectedOptions.length }})
+  </span>
+</button>
+</div>
 <div
   *ngIf="questionnaireForm?.contains(question._id)"
   [formGroup]="questionnaireForm"
@@ -38,21 +53,6 @@
           </button>
         </div>
       </div>
-
-      <!-- Add Button -->
-      <button
-        type="button"
-        class="btn-outline-secondary"
-        (click)="openModal()"
-      >
-        <mat-icon>add</mat-icon>
-        <span *ngIf="!isMultiSelect || (isMultiSelect && selectedOptions.length === 0)">Add</span>
-        <span *ngIf="isMultiSelect && selectedOptions.length > 0">Added</span>
-        <!-- Show count in button for multi-select -->
-        <span *ngIf="isMultiSelect && selectedOptions.length > 0" class="button-count">
-          ({{ selectedOptions.length }})
-        </span>
-      </button>
     </div>
   </div>
 </div>
