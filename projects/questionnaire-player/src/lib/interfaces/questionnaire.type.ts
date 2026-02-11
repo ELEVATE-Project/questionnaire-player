@@ -193,10 +193,11 @@ export interface Payload {
 
 export interface Validation {
   required: boolean;
-  max?: string;
-  min?: string;
+  max?: string | number;
+  min?: string | number;
   IsNumber?: string;
   regex: RegExp;
+  validationMax?: string;
 }
 
 export interface Option {
@@ -256,6 +257,7 @@ export interface ApiConfiguration{
   showSaveDraftButton?: boolean; // If true, show the save draft button, otherwise hide it
   progressCalculationLevel?: 'page' | 'input'; // 'page' calculates progress when all questions on a page are complete, 'input' calculates progress for each individual input/field
   progressCountOptionalFields?: boolean; // If true, optional fields are also counted in progress calculation (default: true for input level, false for page level)
+  showPrivacyPopup?: boolean; // If false, skip the privacy policy popup when uploading files (default: true)
 }
 
 

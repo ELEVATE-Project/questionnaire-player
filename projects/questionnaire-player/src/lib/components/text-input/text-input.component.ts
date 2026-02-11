@@ -10,6 +10,7 @@ import { QuestionnaireService } from '../../services/questionnaire.service';
 })
 export class TextInputComponent implements OnInit {
   text: string;
+  maxLength: number;
   @Input() questionnaireForm: FormGroup;
   @Input() question : Question;
   placeholder;
@@ -18,6 +19,15 @@ export class TextInputComponent implements OnInit {
 
   ngOnInit() {
     this.placeholder = 'Enter your response';
+    const validation = this.question.validation as any;
+    // Handle phone number validation: if min and max are both 10, set maxLength to 10
+    if (validation && validation.IsNumber === 'true' && 
+        validation.min !== undefined && validation.max !== undefined &&
+        Number(validation.min) === 10 && Number(validation.max) === 10) {
+      this.maxLength = 10;
+    } else {
+      this.maxLength = null;
+    }
     setTimeout(() => {
       this.questionnaireForm.addControl(
         this.question._id,

@@ -9,6 +9,7 @@
     matInput
     [formControlName]="question._id"
     [placeholder]="question.placeHolder || placeholder"
+    [maxlength]="maxLength"
     (change)="onChange($event)"
     [value]="question.value"
   />

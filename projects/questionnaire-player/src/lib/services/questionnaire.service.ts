@@ -19,20 +19,41 @@ export class QuestionnaireService {
       if (typeof data.validation == 'string') {
         return null;
       }
-      if (!data.validation.required) {
-        return null;
+      
+      // Validate phone number length (min: 10, max: 10) - check even if not required
+      if (data.responseType === ResponseType.TEXT && 
+          data.validation.IsNumber === 'true' &&
+          data.validation.min !== undefined && data.validation.max !== undefined &&
+          Number(data.validation.min) === 10 && Number(data.validation.max) === 10) {
+        const phoneValue = String(control.value || '');
+        if (phoneValue.length > 0 && phoneValue.length !== 10) {
+          return { err: 'Phone number must be exactly 10 digits' };
+        }
       }
+
       if (data.validation.regex) {
         const forbidden = this.testRegex(data.validation.regex, control.value || '');
         return forbidden ? null : { err: 'Invalid character found' };
       }
 
       if (data.validation.IsNumber) {
-        if (!control.value) {
-          return { err: 'Number not entered' };
+        // Validate that value is a number if provided (including 0)
+        // Check if value exists (0 is a valid value, so we check for null, undefined, or empty string)
+        if (control.value !== null && control.value !== undefined && control.value !== '') {
+          const isNumber = !isNaN(control.value);
+          if (!isNumber) {
+            return { err: 'Only numbers allowed' };
+          }
+          
+          // Validate number min value for number input fields
+          if (data.responseType === ResponseType.NUMBER &&
+              data.validation.min !== undefined && data.validation.min !== null && data.validation.min !== '') {
+            const minValue = typeof data.validation.min === 'string' ? parseFloat(data.validation.min) : data.validation.min;
+            if (Number(control.value) < minValue) {
+              return { err: `Minimum value is ${minValue}` };
+            }
+          }
         }
-        const forbidden = !isNaN(control.value);
-        return forbidden ? null : { err: 'Only numbers allowed' };
       }
 
       if (data.validation.required) {
@@ -55,7 +76,8 @@ export class QuestionnaireService {
           }
         }
         
-        if (!control.value) {
+        // Check for required field - handle 0 as valid value
+        if (control.value === null || control.value === undefined || control.value === '') {
           return { err: 'Required field' };
         }
 

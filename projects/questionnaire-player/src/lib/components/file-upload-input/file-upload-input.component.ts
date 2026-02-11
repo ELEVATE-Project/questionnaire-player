@@ -1,6 +1,6 @@
 import { Component, Input, OnInit, ViewChild, ElementRef, TemplateRef } from '@angular/core';
 import { FormControl, FormGroup } from '@angular/forms';
-import { Question } from '../../interfaces/questionnaire.type';
+import { Question, ApiConfiguration } from '../../interfaces/questionnaire.type';
 import { QuestionnaireService } from '../../services/questionnaire.service';
 import { MatDialog } from '@angular/material/dialog';
 import { AlertComponent } from '../alert/alert.component';
@@ -20,6 +20,7 @@ export class FileUploadInputComponent implements OnInit {
   @Input() questionnaireForm: FormGroup;
   @Input() question: Question;
   @Input() fileSizeLimit: number = limit;
+  @Input() apiConfig?: ApiConfiguration;
   @ViewChild('fileInput') fileInput: ElementRef;
   @ViewChild('previewModal') previewModal: TemplateRef<any>;
   
@@ -79,21 +80,35 @@ export class FileUploadInputComponent implements OnInit {
 
   async handleFileUpload() {
     try {
-      const data = await this.showPrivacyPolicyPopup().toPromise();
-      if (data) {
-        if (data.isChecked && data.upload) {
-          this.isConsentGiven = true;
-          const fileInputElement = document.getElementById(
-            `input-${this.question._id}`
-          ) as HTMLInputElement;
-          if (fileInputElement) {
-            fileInputElement.click();
+      // Check if privacy popup should be shown (default: true for backward compatibility)
+      const showPopup = this.apiConfig?.showPrivacyPopup !== false;
+      
+      if (showPopup) {
+        const data = await this.showPrivacyPolicyPopup().toPromise();
+        if (data) {
+          if (data.isChecked && data.upload) {
+            this.isConsentGiven = true;
+            const fileInputElement = document.getElementById(
+              `input-${this.question._id}`
+            ) as HTMLInputElement;
+            if (fileInputElement) {
+              fileInputElement.click();
+            }
+          } else {
+            this.toastService.showToast(
+              'Evidence not uploaded. Please click on attach and accept the content policy terms.',
+              'danger'
+            );
           }
-        } else {
-          this.toastService.showToast(
-            'Evidence not uploaded. Please click on attach and accept the content policy terms.',
-            'danger'
-          );
+        }
+      } else {
+        // Skip popup and proceed directly with file upload
+        this.isConsentGiven = true;
+        const fileInputElement = document.getElementById(
+          `input-${this.question._id}`
+        ) as HTMLInputElement;
+        if (fileInputElement) {
+          fileInputElement.click();
         }
       }
     } catch (error) {
