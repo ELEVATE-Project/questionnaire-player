@@ -24,3 +24,12 @@ body{
     --light-grey: #f1f1f1;
 }
 
+/* Toast/Snackbar styling */
+::ng-deep .custom-toast {
+    z-index: 100 !important;
+}
+
+::ng-deep .mat-mdc-snack-bar-container {
+    z-index: 100 !important;
+}
+

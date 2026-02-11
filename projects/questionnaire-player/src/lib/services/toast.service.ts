@@ -13,9 +13,9 @@ export class ToastService {
     let styleClass = type ? type : "default"
     let snackBarConfig = {
       duration: duration ? duration : 3000,
-      verticalPosition: verticalPosition ? verticalPosition : 'top',
+      verticalPosition: verticalPosition ? verticalPosition : 'bottom',
       horizontalPosition: horizontalPosition ? horizontalPosition : "center",
-      panelClass: [styleClass]
+      panelClass: [styleClass, 'custom-toast']
     }
     this.snackBar.open(message,'',snackBarConfig)
   }
@@ -29,9 +29,9 @@ export class ToastService {
     let styleClass = type ? type : "default"
     let snackBarConfig = {
       duration: duration ? duration : 3000,
-      verticalPosition: verticalPosition ? verticalPosition : 'top',
+      verticalPosition: verticalPosition ? verticalPosition : 'bottom',
       horizontalPosition: horizontalPosition ? horizontalPosition : "center",
-      panelClass: [styleClass]
+      panelClass: [styleClass, 'custom-toast']
     }
     this.snackBar.open(message,'',snackBarConfig)
   }

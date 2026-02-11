@@ -36,3 +36,12 @@ $my-theme: mat.define-light-theme((color: (primary: $my-primary,
   --mat-stepper-header-edit-state-icon-background-color: var(--primary-color);
   --mat-option-selected-state-label-text-color: var(--primary-color) !important;
 }
+
+/* Toast/Snackbar styling */
+::ng-deep .custom-toast {
+    z-index: 100 !important;
+}
+
+::ng-deep .mat-mdc-snack-bar-container {
+    z-index: 100 !important;
+}

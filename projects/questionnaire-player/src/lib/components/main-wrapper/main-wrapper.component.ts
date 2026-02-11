@@ -1023,7 +1023,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       if (!this.saveQuestioner) {
         const confirmationParams = {
           title: 'Confirmation',
-          message: `Are you sure you want to submit the ${this.solutionType}?`,
+          message: `Are you sure you want to submit the ${this?.assessment?.solution?.name}?`,
           actionBtns: true,
           cancelLabel: 'Cancel',
           acceptLabel: 'Confirm',
@@ -1257,6 +1257,22 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       }
       this.setSection(newIndex);
     }
+  }
+
+  getFilteredQuestion(question: any): string {
+    if (!question || !question.question) {
+      return '';
+    }
+    
+    // If it's an array, filter out empty, null, and undefined values
+    if (Array.isArray(question.question)) {
+      return question.question
+        .filter(q => q !== null && q !== undefined && q !== '')
+        .join(' ');
+    }
+    
+    // If it's a string, return as is
+    return question.question || '';
   }
 
   async goToQuestion(questonId, pageIndex, sectionIndex) {
