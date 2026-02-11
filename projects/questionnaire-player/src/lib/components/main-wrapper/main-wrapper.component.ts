@@ -1118,7 +1118,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
             const footer = this.el.nativeElement.querySelector('.footer-buttons');
             this.renderer.setStyle(footer, 'display', 'none');
             this.toaster.showToast(
-              `Your ${this.solutionType} has been submitted successfully.`,
+              `Your ${this?.assessment?.solution?.name} has been submitted successfully.`,
               'success',
               5000
             );

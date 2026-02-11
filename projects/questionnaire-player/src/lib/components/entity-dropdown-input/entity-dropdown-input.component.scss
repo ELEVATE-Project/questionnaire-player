@@ -82,35 +82,63 @@
   }
 }
 
-// Add Button
-.add-button {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 6px 16px;
-  border: 1px dashed rgba(0, 0, 0, 0.3);
-  border-radius: 4px;
-  background: transparent;
-  color: var(--primary-color, #1976d2);
-  font-size: 0.875rem;
-  font-weight: 500;
+// Button Styles
+.btn-primary {
+  background-color: var(--primary-color);
+  color: var(--general-btn-text-color);
   cursor: pointer;
-  transition: all 0.2s;
+  border: solid transparent 0.063rem;
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  min-width: 5.6rem;
+  min-height: 2.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
 
+.btn-primary:hover {
+  background-color: var(--general-btn-hover-bg);
+  color: var(--primary-color);
+  border: solid var(--primary-color) 0.063rem;
+}
+
+.btn-disabled {
+  background-color: var(--disabled-btn-bg);
+  color: var(--disabled-btn-text);
+  border: solid transparent 0.063rem;
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  cursor: not-allowed;
+  min-width: 5.6rem;
+  min-height: 2.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+}
+
+.btn-outline-secondary {
+  background-color: var(--secondary-btn-bg);
+  color: var(--primary-color);
+  border: solid var(--primary-color) 0.063rem;
+  border-radius: 0.25rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  min-width: 5.6rem;
+  min-height: 2.5rem;
+  font-size: 0.875rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
   mat-icon {
-    font-size: 18px;
-    width: 18px;
-    height: 18px;
+    font-size: 1rem;
+    width: 1rem;
+    height: 1rem;
   }
 
-  &:hover {
-    border-color: var(--primary-color, #1976d2);
-    background-color: rgba(25, 118, 210, 0.04);
-  }
-
-  &:focus {
-    outline: 2px solid var(--primary-color, #1976d2);
-    outline-offset: 2px;
+  .button-count {
+    font-weight: 600;
+    opacity: 0.9;
   }
 }
 
@@ -249,7 +277,7 @@
 
 .modal-actions {
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
   gap: 8px;
   padding: 16px 24px;
   margin: 0;
@@ -257,15 +285,23 @@
 }
 
 .cancel-btn {
-  color: rgba(0, 0, 0, 0.54);
+  // Uses btn-outline class styling - override if needed
+  color: var(--primary-color, #1976d2);
 }
 
 .confirm-btn {
-  color: var(--primary-color, #1976d2);
-  font-weight: 500;
-
+  // Uses btn-primary class styling - override disabled state
   &:disabled {
-    color: rgba(0, 0, 0, 0.26);
+    background-color: var(--disabled-btn-bg, gainsboro);
+    color: var(--disabled-btn-text, gray);
+    cursor: not-allowed;
+    border-color: transparent;
+    
+    &:hover {
+      background-color: var(--disabled-btn-bg, gainsboro);
+      color: var(--disabled-btn-text, gray);
+      border-color: transparent;
+    }
   }
 }
 

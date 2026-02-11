@@ -42,12 +42,16 @@
       <!-- Add Button -->
       <button
         type="button"
-        mat-button
-        class="add-button"
+        class="btn-outline-secondary"
         (click)="openModal()"
       >
         <mat-icon>add</mat-icon>
-        <span>Add</span>
+        <span *ngIf="!isMultiSelect || (isMultiSelect && selectedOptions.length === 0)">Add</span>
+        <span *ngIf="isMultiSelect && selectedOptions.length > 0">Added</span>
+        <!-- Show count in button for multi-select -->
+        <span *ngIf="isMultiSelect && selectedOptions.length > 0" class="button-count">
+          ({{ selectedOptions.length }})
+        </span>
       </button>
     </div>
   </div>
@@ -162,13 +166,13 @@
 
     <!-- Modal Actions -->
     <div mat-dialog-actions class="modal-actions">
-      <button mat-button (click)="closeModal()" class="cancel-btn">
+      <button type="button" (click)="closeModal()" class="btn-outline-secondary cancel-btn">
         Cancel
       </button>
       <button
-        mat-button
+        type="button"
         (click)="confirmSelection()"
-        class="confirm-btn"
+        class="btn-primary confirm-btn"
         [disabled]="tempSelectedValues.size === 0"
       >
         {{ isMultiSelect ? 'Add' : 'Select' }}
