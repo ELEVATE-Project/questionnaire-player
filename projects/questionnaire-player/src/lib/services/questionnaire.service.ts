@@ -36,6 +36,27 @@ export class QuestionnaireService {
         return forbidden ? null : { err: 'Invalid character found' };
       }
 
+      // Validate minLength and maxLength for TEXT input fields
+      if (data.responseType === ResponseType.TEXT && control.value !== null && control.value !== undefined && control.value !== '') {
+        const textValue = String(control.value);
+        
+        // Check minLength
+        if (data.validation.minLength !== undefined && data.validation.minLength !== null && data.validation.minLength !== '') {
+          const minLength = typeof data.validation.minLength === 'string' ? parseInt(data.validation.minLength, 10) : data.validation.minLength;
+          if (textValue.length < minLength) {
+            return { err: `Minimum ${minLength} characters required` };
+          }
+        }
+        
+        // Check maxLength
+        if (data.validation.maxLength !== undefined && data.validation.maxLength !== null && data.validation.maxLength !== '') {
+          const maxLength = typeof data.validation.maxLength === 'string' ? parseInt(data.validation.maxLength, 10) : data.validation.maxLength;
+          if (textValue.length > maxLength) {
+            return { err: `Maximum ${maxLength} characters allowed` };
+          }
+        }
+      }
+
       if (data.validation.IsNumber) {
         // Validate that value is a number if provided (including 0)
         // Check if value exists (0 is a valid value, so we check for null, undefined, or empty string)
@@ -45,12 +66,40 @@ export class QuestionnaireService {
             return { err: 'Only numbers allowed' };
           }
           
-          // Validate number min value for number input fields
-          if (data.responseType === ResponseType.NUMBER &&
-              data.validation.min !== undefined && data.validation.min !== null && data.validation.min !== '') {
-            const minValue = typeof data.validation.min === 'string' ? parseFloat(data.validation.min) : data.validation.min;
-            if (Number(control.value) < minValue) {
-              return { err: `Minimum value is ${minValue}` };
+          // Validate number min/max values for number input fields
+          if (data.responseType === ResponseType.NUMBER) {
+            // Check min value
+            if (data.validation.min !== undefined && data.validation.min !== null && data.validation.min !== '') {
+              const minValue = typeof data.validation.min === 'string' ? parseFloat(data.validation.min) : data.validation.min;
+              if (Number(control.value) < minValue) {
+                return { err: `Minimum value is ${minValue}` };
+              }
+            }
+            
+            // Check max value
+            if (data.validation.max !== undefined && data.validation.max !== null && data.validation.max !== '') {
+              const maxValue = typeof data.validation.max === 'string' ? parseFloat(data.validation.max) : data.validation.max;
+              if (Number(control.value) > maxValue) {
+                return { err: `Maximum value is ${maxValue}` };
+              }
+            }
+            
+            // Check minLength (minimum number of digits)
+            if (data.validation.minLength !== undefined && data.validation.minLength !== null && data.validation.minLength !== '') {
+              const minLength = typeof data.validation.minLength === 'string' ? parseInt(data.validation.minLength, 10) : data.validation.minLength;
+              const valueStr = String(control.value).replace(/[.-]/g, ''); // Remove minus and decimal
+              if (valueStr.length < minLength) {
+                return { err: `Minimum ${minLength} digits required` };
+              }
+            }
+            
+            // Check maxLength (maximum number of digits)
+            if (data.validation.maxLength !== undefined && data.validation.maxLength !== null && data.validation.maxLength !== '') {
+              const maxLength = typeof data.validation.maxLength === 'string' ? parseInt(data.validation.maxLength, 10) : data.validation.maxLength;
+              const valueStr = String(control.value).replace(/[.-]/g, ''); // Remove minus and decimal
+              if (valueStr.length > maxLength) {
+                return { err: `Maximum ${maxLength} digits allowed` };
+              }
             }
           }
         }

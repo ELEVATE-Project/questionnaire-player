@@ -44,9 +44,8 @@ export class DateInputComponent implements OnInit {
     this.min = validation.min
       ? new Date(validation.min as string)
       : null;
-    
     // Handle validationMax: "today" to prevent future dates
-    if (validation.validationMax === 'today') {
+    if (validation.max && validation.max === 'today') {
       const today = new Date();
       today.setHours(23, 59, 59, 999); // Set to end of today
       this.max = today;

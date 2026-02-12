@@ -676,20 +676,20 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
             const isRequired = typeof validation !== 'string' && validation?.required;
             const value = control?.value;
 
-            if (isRequired) {
-              const isEmpty = Array.isArray(value) 
-                ? !value.some(v => v !== '' && v != null && v !== undefined)
-                : (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === ''));
+            // Check if field is invalid (either required and empty, or has any validation errors)
+            const isEmpty = Array.isArray(value) 
+              ? !value.some(v => v !== '' && v != null && v !== undefined)
+              : (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === ''));
 
-              if (isEmpty || !control?.valid) {
-                sectionIncompleteQuestions.push({
-                  _id: pageQuestion._id,
-                  question: pageQuestion.question,
-                  questionNumber: pageQuestion.questionNumber,
-                  pageIndex: enablePagination ? questionIndex : questionIndexInSection,
-                  sectionIndex: sectionIndex
-                });
-              }
+            // Include field if: (required and empty) OR (control is invalid due to any validation)
+            if ((isRequired && isEmpty) || (control && !control.valid)) {
+              sectionIncompleteQuestions.push({
+                _id: pageQuestion._id,
+                question: pageQuestion.question,
+                questionNumber: pageQuestion.questionNumber,
+                pageIndex: enablePagination ? questionIndex : questionIndexInSection,
+                sectionIndex: sectionIndex
+              });
             }
             questionIndexInSection++;
           }
@@ -699,20 +699,20 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
           const isRequired = typeof validation !== 'string' && validation?.required;
           const value = control?.value;
 
-          if (isRequired) {
-            const isEmpty = Array.isArray(value)
-              ? !value.some(v => v !== '' && v != null && v !== undefined)
-              : (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === ''));
+          // Check if field is invalid (either required and empty, or has any validation errors)
+          const isEmpty = Array.isArray(value)
+            ? !value.some(v => v !== '' && v != null && v !== undefined)
+            : (value === undefined || value === null || value === '' || (typeof value === 'string' && value.trim() === ''));
 
-            if (isEmpty || !control?.valid) {
-              sectionIncompleteQuestions.push({
-                _id: question._id,
-                question: question.question,
-                questionNumber: question.questionNumber,
-                pageIndex: enablePagination ? questionIndex : questionIndexInSection,
-                sectionIndex: sectionIndex
-              });
-            }
+          // Include field if: (required and empty) OR (control is invalid due to any validation)
+          if ((isRequired && isEmpty) || (control && !control.valid)) {
+            sectionIncompleteQuestions.push({
+              _id: question._id,
+              question: question.question,
+              questionNumber: question.questionNumber,
+              pageIndex: enablePagination ? questionIndex : questionIndexInSection,
+              sectionIndex: sectionIndex
+            });
           }
           questionIndexInSection++;
         }
@@ -882,14 +882,22 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   setQuestionMap(sectionIndex, qIndex, qValidation, qValue, questionId, qNum, mapKey?: string) {
     const validation = qValidation;
     const value = qValue;
+    
+    // Check if the form control exists and is invalid
+    const control = this.questionnaireForm.controls[questionId];
+    const isControlInvalid = control && !control.valid;
+    
     const question = {
       _id: questionId,
       validity:
-        (value && value.length > 0) || Number.isInteger(value)
-          ? '#006600'
-          : typeof validation !== 'string' && validation.required
-            ? '#A30000'
-            : '#595959',
+        // If control is invalid (any validation error including min/max/regex), mark as red
+        isControlInvalid
+          ? '#A30000'  // Red - has validation errors
+          : (value && value.length > 0) || Number.isInteger(value)
+            ? '#006600'  // Green - has value and valid
+            : typeof validation !== 'string' && validation.required
+              ? '#A30000'  // Red - required but empty
+              : '#595959', // Gray - optional and empty
       sectionName: this.sections[sectionIndex].name,
       sectionIndex: sectionIndex,
       pageIndex: qIndex,
@@ -940,7 +948,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   handleSubmitClick() {
-    if ((this.apiConfig?.showSaveDraftButton === true && this.pageProgressValue != 100) || (this.apiConfig?.showSaveDraftButton !== true && !this.questionnaireForm?.valid)) {
+    if (!this.questionnaireForm?.valid || (this.apiConfig?.showSaveDraftButton === true && this.pageProgressValue != 100)) {
       this.getQuestionMap();
     } else {
       this.submission('submit');
@@ -1321,6 +1329,32 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     const focusField = () => {
       // Try multiple ways to find the input element
       let inputElement: HTMLElement | null = null;
+      
+      // Check if this is a matrix question by looking for the matrix container
+      const matrixContainer = document.querySelector(`#matrix-${questonId}, [data-question-id="${questonId}"].matrix-question-container`) as HTMLElement;
+      if (matrixContainer) {
+        // For matrix questions, scroll to container and focus on Add button
+        matrixContainer.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // Highlight the matrix container
+        const originalBoxShadow = matrixContainer.style.boxShadow;
+        const originalTransition = matrixContainer.style.transition;
+        matrixContainer.style.transition = 'box-shadow 0.3s';
+        matrixContainer.style.boxShadow = '0 0 15px rgba(163, 0, 0, 0.6)';
+        
+        setTimeout(() => {
+          matrixContainer.style.boxShadow = originalBoxShadow;
+          matrixContainer.style.transition = originalTransition;
+        }, 2000);
+        
+        // Find and focus the Add button
+        const addButton = document.getElementById(`matrix-add-btn-${questonId}`) as HTMLButtonElement;
+        if (addButton) {
+          setTimeout(() => addButton.focus(), 300);
+        }
+        
+        return true;
+      }
       
       // Method 1: Direct ID match
       inputElement = document.getElementById(questonId) as HTMLElement;

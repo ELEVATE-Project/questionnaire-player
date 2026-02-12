@@ -57,9 +57,17 @@ export class MatrixQuestionsComponent implements OnInit {
     this.cancelText = 'Cancel';
     setTimeout(() => {
       this.matrixForm = this.fb.group({},Validators.required);
+      
+      // Check if the matrix question is required
+      const validation = this.question.validation;
+      const isRequired = typeof validation !== 'string' && validation?.required;
+      
+      // Create FormArray with validators only if required
+      const validators = isRequired ? [Validators.required] : [];
+      
       this.questionnaireForm.setControl(
         this.question._id,
-        new FormArray([], [Validators.required])
+        new FormArray([], validators)
       );
       this.initializeMatrix();
     });
@@ -89,6 +97,16 @@ export class MatrixQuestionsComponent implements OnInit {
   }
 
   instanceValidation(control: FormControl) {
+    // Only validate if the matrix question is required
+    const validation = this.question.validation;
+    const isRequired = typeof validation !== 'string' && validation?.required;
+    
+    if (!isRequired) {
+      // If not required, instance can be empty
+      return null;
+    }
+    
+    // If required, check if value is empty
     let value = control.value;
     if (this.utilService.isEmpty(value)) {
       return { err: 'Instance not filled' };
@@ -103,7 +121,14 @@ export class MatrixQuestionsComponent implements OnInit {
       JSON.parse(JSON.stringify(this.question.instanceQuestions))
     );
     this.matrixForm.reset();
-    this.formAsArray.push(new FormControl([], [Validators.required]));
+    
+    // Check if the matrix question is required
+    const validation = this.question.validation;
+    const isRequired = typeof validation !== 'string' && validation?.required;
+    
+    // Add validator only if required
+    const validators = isRequired ? [Validators.required] : [];
+    this.formAsArray.push(new FormControl([], validators));
   }
 
   viewInstance(i): void {

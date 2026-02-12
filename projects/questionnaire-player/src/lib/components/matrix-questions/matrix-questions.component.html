@@ -1,40 +1,42 @@
-<div class="d-flex flex-jc-flex-end">
-  <button class="btn-primary" (click)="addInstances()">
-    {{ addText }}
-    {{ question?.instanceIdentifier }}
-  </button>
-</div>
-<mat-card
-  *ngFor="let instance of question?.value; let i = index"
-  class="instance-card"
->
-  <div class="display-row">
-    <div
-      (click)="viewInstance(i)"
-      class="instance-details"
-      [ngClass]="{ 'valid-response': formAsArray?.controls[i]?.valid }"
-    >
-      <div class="header-line">
-        <span class="student-label">
-          {{ question?.instanceIdentifier }} {{ i + 1 }}
-        </span>
-        <button
-          mat-icon-button
-          matTooltip="Delete instance"
-          aria-label="icon-button with a delete icon"
-          style="color: var(--primary-color);"
-          (click)="deleteInstanceAlert(i);$event.stopPropagation()"
-        >
-          <mat-icon>delete</mat-icon>
-        </button>
-      </div>
-
-      <span class="updated-label" *ngIf="instanceLastUpdated[i]">
-        Last Updated On: {{ instanceLastUpdated[i] | date : "short" }}
-      </span>
-    </div>
+<div [attr.id]="'matrix-' + question._id" [attr.data-question-id]="question._id" class="matrix-question-container">
+  <div class="d-flex flex-jc-flex-end">
+    <button class="btn-primary" [attr.id]="'matrix-add-btn-' + question._id" (click)="addInstances()">
+      {{ addText }}
+      {{ question?.instanceIdentifier }}
+    </button>
   </div>
-</mat-card>
+  <mat-card
+    *ngFor="let instance of question?.value; let i = index"
+    class="instance-card"
+  >
+    <div class="display-row">
+      <div
+        (click)="viewInstance(i)"
+        class="instance-details"
+        [ngClass]="{ 'valid-response': formAsArray?.controls[i]?.valid }"
+      >
+        <div class="header-line">
+          <span class="student-label">
+            {{ question?.instanceIdentifier }} {{ i + 1 }}
+          </span>
+          <button
+            mat-icon-button
+            matTooltip="Delete instance"
+            aria-label="icon-button with a delete icon"
+            style="color: var(--primary-color);"
+            (click)="deleteInstanceAlert(i);$event.stopPropagation()"
+          >
+            <mat-icon>delete</mat-icon>
+          </button>
+        </div>
+
+        <span class="updated-label" *ngIf="instanceLastUpdated[i]">
+          Last Updated On: {{ instanceLastUpdated[i] | date : "short" }}
+        </span>
+      </div>
+    </div>
+  </mat-card>
+</div>
 
 <ng-template #modal>
   <div

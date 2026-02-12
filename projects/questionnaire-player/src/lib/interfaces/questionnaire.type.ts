@@ -195,9 +195,10 @@ export interface Validation {
   required: boolean;
   max?: string | number;
   min?: string | number;
+  maxLength?: string | number;
+  minLength?: string | number;
   IsNumber?: string;
   regex: RegExp;
-  validationMax?: string;
 }
 
 export interface Option {
