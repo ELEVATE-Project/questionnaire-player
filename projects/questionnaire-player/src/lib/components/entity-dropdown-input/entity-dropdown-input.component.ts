@@ -322,9 +322,8 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
         } else if (response.data) {
           data = Array.isArray(response.data) ? response.data : [];
         }
-        console.log('data',response);
+        
         const totalCount = response.result?.totalCount || response.result?.count || (response as any).total || response.totalCount || response.count || 0;
-
         // Map response to options
         const newOptions = this.mapResponseToOptions(data as any[]);
         
@@ -395,21 +394,43 @@ export class EntityDropdownInputComponent implements OnInit, OnDestroy {
       // Evaluate each part and concatenate
       return parts.map(part => {
         const trimmedPart = part.trim();
-        
         // Check if part is quoted (starts and ends with single quotes)
         if (trimmedPart.startsWith("'") && trimmedPart.endsWith("'") && trimmedPart.length >= 2) {
           // It's a literal string - remove surrounding quotes and return as-is
           return trimmedPart.slice(1, -1);
         } else {
-          // It's a field path (e.g., "firstName" or "company.name")
           // Get the value from the object using dot notation
-          return this.getNestedValue(item, trimmedPart) || '';
+          const fieldValue = this.getNestedValue(item, trimmedPart);
+          // Check if this field has a label mapping (e.g., status field)
+          const mappedValue = this.applyLabelMapping(trimmedPart, fieldValue);
+          return mappedValue || '';
         }
       }).join('');
     } else {
       // Simple field access (backward compatibility - no commas means single field)
-      return this.getNestedValue(item, labelKey) || '';
+      const fieldValue = this.getNestedValue(item, labelKey);
+      return this.applyLabelMapping(labelKey, fieldValue) || '';
     }
+  }
+
+  /**
+   * Apply label mapping for specific fields (like status)
+   * Based on metaInformation.config.lableMapping configuration
+   */
+  private applyLabelMapping(fieldName: string, fieldValue: any): string {
+    if (!fieldValue) return fieldValue;
+    const lableMapping = this.apiConfig?.dynamicEntityTyperequireDynamicAnswers?.lableMapping;
+    // Check if there's a mapping for this field
+    if (lableMapping && lableMapping[fieldName]) {
+      const mappingForField = lableMapping[fieldName];
+      // Check if fieldValue is a string and trim it before looking up the mapping
+      if (typeof fieldValue === 'string') {
+        return mappingForField[fieldValue.trim()] || fieldValue;
+      }
+      return mappingForField[fieldValue] || fieldValue;
+    }
+    
+    return fieldValue;
   }
 
   /**

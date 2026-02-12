@@ -21,8 +21,13 @@
   <!-- Selected Tags Display -->
   <div class="selected-tags-container">
     <div class="tags-wrapper">
+      <!-- Placeholder when no selection -->
+      <div *ngIf="(!isMultiSelect && !selectedOption) || (isMultiSelect && selectedOptions.length === 0)" class="placeholder-text">
+        <span>{{ question.placeHolder || 'Select an option' }}</span>
+      </div>
+      
       <!-- Multi-select: Show all selected tags -->
-      <div *ngIf="isMultiSelect" class="tags-list">
+      <div *ngIf="isMultiSelect && selectedOptions.length > 0" class="tags-list">
         <div
           *ngFor="let option of selectedOptions"
           class="entity-tag"

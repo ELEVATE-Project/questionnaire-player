@@ -259,6 +259,13 @@ export interface ApiConfiguration{
   progressCalculationLevel?: 'page' | 'input'; // 'page' calculates progress when all questions on a page are complete, 'input' calculates progress for each individual input/field
   progressCountOptionalFields?: boolean; // If true, optional fields are also counted in progress calculation (default: true for input level, false for page level)
   showPrivacyPopup?: boolean; // If false, skip the privacy policy popup when uploading files (default: true)
+  dynamicEntityTyperequireDynamicAnswers?: {
+    lableMapping?: {
+      [key: string]: {
+        [key: string]: string;
+      };
+    };
+  };
 }
 
 
