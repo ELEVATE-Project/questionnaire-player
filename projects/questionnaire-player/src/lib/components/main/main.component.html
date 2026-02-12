@@ -25,7 +25,7 @@
 </ng-template>
 
 <ng-template #questionnaire let-question="question" let-qi="qi" let-pageId="pageId">
-  <span [id]="pageId">
+  <span [id]="pageId" [style.display]="(!question.visibleIf?.length || question.canDisplay == true) ? 'block' : 'none'">
   <ng-container *ngIf="
       question?.sectionHeader &&
       (!question.visibleIf?.length || question.canDisplay == true)
