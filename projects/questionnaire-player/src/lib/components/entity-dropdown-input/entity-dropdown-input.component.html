@@ -1,16 +1,15 @@
 <div class="d-flex flex-jc-flex-end mb-10">
+  <!-- Chip showing selected count -->
+  <mat-chip-set *ngIf="isMultiSelect && selectedOptions.length > 0" class="selected-count-chip">
+    <mat-chip>{{ selectedOptions.length }} selected</mat-chip>
+  </mat-chip-set>
   <button
   type="button"
   class="btn-outline-secondary"
   (click)="openModal()"
 >
   <mat-icon>add</mat-icon>
-  <span *ngIf="!isMultiSelect || (isMultiSelect && selectedOptions.length === 0)">Add</span>
-  <span *ngIf="isMultiSelect && selectedOptions.length > 0">Added</span>
-  <!-- Show count in button for multi-select -->
-  <span *ngIf="isMultiSelect && selectedOptions.length > 0" class="button-count">
-    ({{ selectedOptions.length }})
-  </span>
+  <span>Select</span>
 </button>
 </div>
 <div

@@ -67,6 +67,7 @@ import { SpinnerComponent } from './shared/components/spinner/spinner.component'
 import { MatSelectModule } from '@angular/material/select';
 import { MatExpansionModule } from '@angular/material/expansion';
 import {MatProgressBarModule} from '@angular/material/progress-bar';
+import { MatChipsModule } from '@angular/material/chips';
 import { PageQuestionsGridComponent } from './components/page-questions-grid/page-questions-grid.component';
 import { CardsQuestionsComponent } from './components/cards-questions/cards-questions.component';
 import { FileUploadInputComponent } from './components/file-upload-input/file-upload-input.component';
@@ -156,7 +157,8 @@ const MAT_CUSTOM_DATE_FORMATS = {
     MatSelectModule,
     FormsModule,
     MatExpansionModule,
-    MatProgressBarModule
+    MatProgressBarModule,
+    MatChipsModule
     ],
   exports: [RouterModule],
   providers: [

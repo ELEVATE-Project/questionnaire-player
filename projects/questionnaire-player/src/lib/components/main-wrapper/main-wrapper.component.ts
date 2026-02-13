@@ -1453,7 +1453,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     // if (this.questionnaireForm.dirty) {
     //   await this.submission('save');
     // }
-      await this.submission('save');
+      // await this.submission('save');
 
 
     // this.toaster.clearToaster()
