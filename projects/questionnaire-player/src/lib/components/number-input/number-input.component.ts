@@ -55,7 +55,7 @@ export class NumberInputComponent implements OnInit {
     setTimeout(() => {
       this.questionnaireForm.addControl(
         this.question._id,
-        new FormControl(this.question.value || null, [
+        new FormControl(this.question.value !== undefined && this.question.value !== null ? this.question.value : null, [
           this.qService.validate(this.question),
         ])
       );

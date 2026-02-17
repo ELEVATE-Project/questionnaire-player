@@ -121,6 +121,15 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     
     // Keep window.postMessage for backward compatibility
     window.postMessage(message, target || '*');
+
+    // If message type is TOAST and config allows, show toast
+    if (message.type === 'TOAST' && message.data) {
+      const showToast = this.apiConfig?.showToast !== false;
+      if (showToast) {
+        const { message: toastMessage, toastType } = message.data;
+        this.toaster.showToast(toastMessage, toastType, 10000);
+      }
+    }
   }
 
   async ngOnChanges(changes: SimpleChanges) {
@@ -496,13 +505,11 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
           return;
         }
 
-
         if (res.result) {
           this.setValue(res.result);
         } else {
-          this.toaster.showToast('Something went wrong, Please try again later', 'danger', 5000)
+          this.sendMessage({ type: 'TOAST', data: { message: 'Something went wrong, Please try again later', toastType: 'danger' } }, '*');
         }
-
       });
   }
 
@@ -1053,7 +1060,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
               this.totalFileToUpload++;
               const storedFile: any = await this.db.getData(file.name);
               if (!storedFile || !storedFile.data) {
-                this.toaster.showToast(`No stored data found for file: ${file.name}`, 'danger', 5000);
+                this.sendMessage({ type: 'TOAST', data: { message: `No stored data found for file: ${file.name}`, toastType: 'danger' } }, '*');
                 continue;
               }
               file.submissionId = submissionId;
@@ -1091,7 +1098,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
           }
         } catch (uploadErr) {
           console.error('Batch upload failed:', uploadErr);
-          this.toaster.showToast(`Failed to upload files`, 'danger', 5000);
+          this.sendMessage({ type: 'TOAST', data: { message: 'Failed to upload files', toastType: 'danger' } }, '*');
           this.uploading = false;
           return;
         } finally {
@@ -1114,7 +1121,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
         .pipe(
           catchError((err) => {
             const errorMsg = err?.error?.message || 'Submission failed';
-            this.toaster.showToast(errorMsg, 'danger', 5000);
+            this.sendMessage({ type: 'TOAST', data: { message: errorMsg, toastType: 'danger' } }, '*');
             throw err;
           })
         )
@@ -1125,11 +1132,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
             this.formIsNotDirty();
             const footer = this.el.nativeElement.querySelector('.footer-buttons');
             this.renderer.setStyle(footer, 'display', 'none');
-            this.toaster.showToast(
-              `Your ${this?.assessment?.solution?.name} has been submitted successfully.`,
-              'success',
-              5000
-            );
+            this.sendMessage({ type: 'TOAST', data: { message: `Your ${this?.assessment?.solution?.name} has been submitted successfully.`, toastType: 'success' } }, '*');
             this.evidence.isSubmitted = true;
   
             setTimeout(() => {
@@ -1144,7 +1147,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
               }, '*');
             }, 1000);
           } else {
-            this.toaster.showToast(res?.message || 'Submission failed', 'danger', 5000);
+            this.sendMessage({ type: 'TOAST', data: { message: res?.message || 'Submission failed', toastType: 'danger' } }, '*');
             this.evidence.isSubmitted = false;
             await this.updateDataInIndexDb({ ...submissionData, status: 'draft' });
           }
@@ -1155,9 +1158,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       if (responseFromUpdateDataFunction && !this.saveQuestioner) {
         this.formIsNotDirty();
         if (this.questionnaireForm.dirty && !this.isDateAutoSave) {
-          const message = { type: 'PROGRAMS', data: 'Your changes have been saved.' };
-          this.sendMessage(message, '*');
-          this.toaster.showToast(`Your changes have been saved.`, 'success', 5000);
+          this.sendMessage({ type: 'TOAST', data: { message: 'Your changes have been saved.', toastType: 'success' } }, '*');
         }
         this.isDateAutoSave = false;
       }
@@ -1474,7 +1475,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
   async getQuestions(data) {
     if (data?.isATargetedSolution === false) {
-      this.toaster.showToast('Dear User, this Observation is not relevant for your subrole and location', 'danger', 5000)
+      this.sendMessage({ type: 'TOAST', data: { message: 'Dear User, this Observation is not relevant for your subrole and location', toastType: 'danger' } }, '*');
     }
 
     this.assessment = this.questionnaireService.mapSubmissionToAssessment(
@@ -1722,11 +1723,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       this.sendMessage(message, '*');
     } 
     else {
-      this.toaster.showToast(
-        'Dear User, this Observation is not relevant for your subrole and location',
-        'danger',
-        5000
-      );
+      this.sendMessage({ type: 'TOAST', data: { message: 'Dear User, this Observation is not relevant for your subrole and location', toastType: 'danger' } }, '*');
     }
   }
   

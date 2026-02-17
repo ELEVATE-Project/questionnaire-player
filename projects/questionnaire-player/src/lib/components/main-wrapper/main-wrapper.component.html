@@ -272,9 +272,17 @@
   <div class="uploading-content">
     <div class="upload-screen">
       <div class="upload-body">
-        <mat-icon class="cloud-icon">cloud_upload</mat-icon>
+        <mat-progress-spinner
+          class="spinner"
+          [color]="color"
+          [mode]="mode"
+          [strokeWidth]="strokeWidth"
+        />
         <div class="upload-text">
-          <p class="uploading">Uploading</p>
+          <div class="d-flex flex-dr flex-ai-center flex-jc-center flex-gap-10 mt-20 mb-10">
+            <mat-icon class="cloud-icon">cloud_upload</mat-icon>
+            <p class="uploading">Uploading</p>
+          </div>
           <p class="progress">
             {{ currentFileUploaded }} Of {{ totalFileToUpload }} Evidences.
           </p>
