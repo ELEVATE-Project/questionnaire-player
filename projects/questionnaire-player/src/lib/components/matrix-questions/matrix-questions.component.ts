@@ -199,4 +199,91 @@ export class MatrixQuestionsComponent implements OnInit {
   closeModal() {
     this.dialog.closeAll();
   }
+
+  /**
+   * Get the first 5 filled fields from an instance
+   * @param instanceIndex The index of the instance
+   * @returns Array of objects with question label and value
+   */
+  getInstancePreviewData(instanceIndex: number): { label: string; value: any }[] {
+    if (!this.question.value || !this.question.value[instanceIndex]) {
+      return [];
+    }
+
+    const instance = this.question.value[instanceIndex];
+    const filledFields: { label: string; value: any }[] = [];
+
+    for (const ques of instance) {
+      if (ques.value !== null && ques.value !== undefined && ques.value !== '') {
+        // Get the label from various possible sources
+        let label = 'Field';
+        
+        if (ques.question) {
+          // Handle case where question is an array (most common)
+          if (Array.isArray(ques.question) && ques.question.length > 0) {
+            label = ques.question[0];
+          } else if (typeof ques.question === 'string') {
+            label = ques.question;
+          }
+        } else if (ques.label) {
+          label = ques.label;
+        } else if (ques.text) {
+          label = ques.text;
+        }
+        
+        filledFields.push({
+          label: label,
+          value: this.formatValue(ques.value)
+        });
+      }
+      
+      // Stop after getting 5 fields
+      if (filledFields.length >= 5) {
+        break;
+      }
+    }
+
+    return filledFields;
+  }
+
+  /**
+   * Check if instance has more than 5 filled fields
+   * @param instanceIndex The index of the instance
+   * @returns True if there are more than 5 filled fields
+   */
+  hasMoreFields(instanceIndex: number): boolean {
+    if (!this.question.value || !this.question.value[instanceIndex]) {
+      return false;
+    }
+
+    const instance = this.question.value[instanceIndex];
+    let filledCount = 0;
+
+    for (const ques of instance) {
+      if (ques.value !== null && ques.value !== undefined && ques.value !== '') {
+        filledCount++;
+      }
+      
+      if (filledCount > 5) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Format the value for display
+   * @param value The value to format
+   * @returns Formatted string
+   */
+  private formatValue(value: any): string {
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    return String(value);
+  }
 }

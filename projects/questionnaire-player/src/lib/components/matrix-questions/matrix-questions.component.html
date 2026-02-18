@@ -33,6 +33,17 @@
         <span class="updated-label" *ngIf="instanceLastUpdated[i]">
           Last Updated On: {{ instanceLastUpdated[i] | date : "short" }}
         </span>
+
+        <!-- Preview of filled data (first 5 fields) -->
+        <div class="data-preview" *ngIf="getInstancePreviewData(i).length > 0">
+          <div class="preview-item" *ngFor="let field of getInstancePreviewData(i)">
+            <span class="preview-label">{{ field.label }}:</span>
+            <span class="preview-value">{{ field.value }}</span>
+          </div>
+          <div class="more-indicator" *ngIf="hasMoreFields(i)">
+            <span class="more-text">Click to view all fields...</span>
+          </div>
+        </div>
       </div>
     </div>
   </mat-card>
