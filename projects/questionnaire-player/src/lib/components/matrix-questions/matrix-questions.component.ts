@@ -233,7 +233,7 @@ export class MatrixQuestionsComponent implements OnInit {
         
         filledFields.push({
           label: label,
-          value: this.formatValue(ques.value)
+          value: this.formatValue(ques.value, ques.responseType, ques.options)
         });
       }
       
@@ -275,15 +275,37 @@ export class MatrixQuestionsComponent implements OnInit {
   /**
    * Format the value for display
    * @param value The value to format
+   * @param responseType The response type of the question (radio, multiselect, etc.)
+   * @param options The options array for radio/multiselect questions
    * @returns Formatted string
    */
-  private formatValue(value: any): string {
+  private formatValue(value: any, responseType?: string, options?: any[]): string {
+    // Handle radio and multiselect - map value(s) to label(s)
+    if ((responseType === 'radio' || responseType === 'multiselect') && options && Array.isArray(options)) {
+      if (Array.isArray(value)) {
+        // Multiselect - array of values
+        const labels = value.map(val => {
+          const option = options.find(opt => opt.value === val);
+          return option ? option.label : val;
+        });
+        return labels.join(', ');
+      } else {
+        // Radio - single value
+        const option = options.find(opt => opt.value === value);
+        return option ? option.label : String(value);
+      }
+    }
+    
+    // Handle other array values
     if (Array.isArray(value)) {
       return value.join(', ');
     }
+    
+    // Handle objects
     if (typeof value === 'object') {
       return JSON.stringify(value);
     }
+    
     return String(value);
   }
 }

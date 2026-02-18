@@ -168,7 +168,6 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async ngOnInit() {
-    this.loadInitialData();
     this.toaster.clearToaster();
 
     let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
@@ -424,7 +423,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
     const indexDbKey = queryParamsData?.indexDbKey;
     let indexdbData = await this.db.getData(indexDbKey);
-    let currentObservation = indexdbData?.data;
+    let currentObservation = indexdbData?.data || this.apiConfig?.mockData ;
 
     if (this.solutionType === "survey") {
       const submissions = currentObservation?.assessment?.submissions;
@@ -1741,14 +1740,5 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     }
     this.initialized = true;
   }
-
-  async loadInitialData() {
-    try {
-      await this.checkAndMapIndexDbDataToVariables();
-    } finally {
-      this.loaded = false; // Only hide after state mapping done
-    }
-
-}
 }
 
