@@ -160,54 +160,78 @@ export class MainComponent implements OnInit, AfterViewInit {
       for (const condition of currentQuestion.visibleIf) {
         if (condition._id === question._id) {
           let expression = [];
-          if (condition.operator != '===') {
+          const conditionValues = this.parseConditionValue(condition.value);
+          // Normalize operator - handle case where operator might be "OR" instead of "||"
+          const normalizedOperator = condition.operator === 'OR' || condition.operator === 'or' ? '||' : condition.operator;
+          if (normalizedOperator != '===') {
             if (question.responseType === 'multiselect') {
-              for (const parentValue of question.value) {
-                for (const value of condition.value) {
-                  expression.push(
-                    '(',
-                    "'" + parentValue + "'",
-                    '===',
-                    "'" + value + "'",
-                    ')',
-                    condition.operator
-                  );
+              if (Array.isArray(question.value) && question.value.length > 0) {
+                for (const parentValue of question.value) {
+                  for (const value of conditionValues) {
+                    expression.push(
+                      '(',
+                      "'" + String(parentValue || '') + "'",
+                      '===',
+                      "'" + String(value || '') + "'",
+                      ')',
+                      normalizedOperator
+                    );
+                  }
                 }
               }
             } else {
-              for (const value of condition.value) {
+              const qValue = question.value !== null && question.value !== undefined ? String(question.value) : '';
+              for (const value of conditionValues) {
                 expression.push(
                   '(',
-                  "'" + question.value + "'",
+                  "'" + qValue + "'",
                   '===',
-                  "'" + value + "'",
+                  "'" + String(value || '') + "'",
                   ')',
-                  condition.operator
+                  normalizedOperator
                 );
               }
             }
-            expression.pop();
+            if (expression.length > 0) {
+              expression.pop(); // Remove last operator
+            }
           } else {
+            // Handle === operator with OR logic for comma-separated values
             if (question.responseType === 'multiselect') {
-              for (const value of question.value) {
+              // For multiselect, check if any question value matches any condition value
+              if (Array.isArray(question.value) && question.value.length > 0) {
+                for (const qValue of question.value) {
+                  for (const condValue of conditionValues) {
+                    expression.push(
+                      '(',
+                      "'" + String(qValue || '') + "'",
+                      '===',
+                      "'" + String(condValue || '') + "'",
+                      ')',
+                      '||'
+                    );
+                  }
+                }
+                if (expression.length > 0) {
+                  expression.pop(); // Remove last '||'
+                }
+              }
+            } else {
+              // For single value, check if question value matches any condition value (OR logic)
+              const questionValue = question.value !== null && question.value !== undefined ? String(question.value) : '';
+              for (const condValue of conditionValues) {
                 expression.push(
                   '(',
-                  "'" + condition.value + "'",
+                  "'" + questionValue + "'",
                   '===',
-                  "'" + value + "'",
+                  "'" + String(condValue || '') + "'",
                   ')',
                   '||'
                 );
               }
-              expression.pop();
-            } else {
-              expression.push(
-                '(',
-                "'" + question.value + "'",
-                condition.operator,
-                "'" + condition.value + "'",
-                ')'
-              );
+              if (expression.length > 0) {
+                expression.pop(); // Remove last '||'
+              }
             }
           }
           if (!eval(expression.join(''))) {
@@ -225,5 +249,17 @@ export class MainComponent implements OnInit, AfterViewInit {
 
   closeHint() {
     this.isDimmed = false;
+  }
+
+  parseConditionValue(val: string | string[]): string[] {
+    if (Array.isArray(val)) {
+      return val.filter(v => v !== null && v !== undefined).map(v => String(v));
+    }
+    if (typeof val === 'string') {
+      if (val.includes(',')) {
+        return val.split(',').map(v => v.trim()).filter(v => v !== '');
+      }
+    }
+    return [];
   }
 }

@@ -210,7 +210,7 @@ export type VisibleIfUnion = VisibleIfElement[] | string;
 
 export interface VisibleIfElement {
   operator: string;
-  value: string[];
+  value: string[] | string;
   _id: string;
 }
 
