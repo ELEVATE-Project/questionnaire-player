@@ -73,6 +73,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   evidenceCode: any;
   solutionType: any;
   uploading: boolean = false;
+  buttonLoading: boolean = false;
   totalFileToUpload: any = 0;
   currentFileUploaded = 0;
   sectionIndex: any = 0;
@@ -645,7 +646,6 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
         answers: this.assessment.assessment.submissions[this.evidenceCode].answers
       };
       await this.updateDataInIndexDb(submissionData);
-      console.log('update');
     }
 
     // Set loaded = true after applying default values
@@ -1030,22 +1030,55 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  async submitSurveyWithConfirmation(submissionData,showConfirmation:boolean = true) {
+    const responseFromUpdateDataFunction = await this.updateDataInIndexDb(submissionData);
+    if (responseFromUpdateDataFunction && !this.saveQuestioner) {
+      this.formIsNotDirty();
+      if (this.questionnaireForm.dirty && !this.isDateAutoSave) {
+        if(showConfirmation){
+          this.sendMessage({ type: 'TOAST', data: { message: 'Your changes have been saved.', toastType: 'success' } }, '*');
+        }
+        return true;
+      }
+      if(showConfirmation){
+        this.isDateAutoSave = false;
+      }
+    }
+    return false;
+  }
+
   async submitSurvey(submissionData) {
-    if (submissionData.status !== 'draft') {
-      this.isDateAutoSave = true;
-  
+    this.buttonLoading = true;
+    const isDraftServerAction = this.apiConfig?.saveProgressStorageType === 'server' && submissionData.status === 'draft';
+    if (submissionData.status !== 'draft' || this.apiConfig?.saveProgressStorageType === 'server') {
+      if(isDraftServerAction){
+        const response = await this.submitSurveyWithConfirmation(submissionData,false);
+        if (!response) {
+          this.buttonLoading = false;
+          return;
+        }
+      } else {
+        this.isDateAutoSave = true;
+      }
+      
       if (!this.saveQuestioner) {
-        const confirmationParams = {
-          title: 'Confirmation',
-          message: `Are you sure you want to submit the ${this?.assessment?.solution?.name}?`,
-          actionBtns: true,
-          cancelLabel: 'Cancel',
-          acceptLabel: 'Confirm',
-        };
-  
-        const response = await this.openAlert(confirmationParams);
-        if (!response) return;
-  
+        if(submissionData.status !== 'draft'){
+          const confirmationParams = {
+            title: 'Confirmation',
+            message: `Are you sure you want to submit the ${this?.assessment?.solution?.name}?`,
+            actionBtns: true,
+            cancelLabel: 'Cancel',
+            acceptLabel: 'Confirm',
+          };
+    
+          const response = await this.openAlert(confirmationParams);
+          if (!response) {
+            this.buttonLoading = false;
+            this.isDateAutoSave = false;
+            return;
+          }
+        }
+
         this.totalFileToUpload = 0;
         this.currentFileUploaded = 0;
   
@@ -1067,9 +1100,8 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
             }
           }
         }
-  
+
         this.uploading = true;
-  
         try {
           if (uploadQueue.length > 0) {
             const payload = {
@@ -1111,7 +1143,6 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
           (answerObj as any).fileName = files.filter(f => f.isUploaded);
         }
       }
-
       this.apiService
         .post(
           `${urlConfig[this.solutionType].update}${this.assessment.assessment.submissionId}`,
@@ -1119,48 +1150,50 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
         )
         .pipe(
           catchError((err) => {
-            const errorMsg = err?.error?.message || 'Submission failed';
+          this.buttonLoading = false;
+          const errorMsg = err?.error?.message || 'Submission failed';
             this.sendMessage({ type: 'TOAST', data: { message: errorMsg, toastType: 'danger' } }, '*');
             throw err;
           })
         )
         .subscribe(async (res: any) => {
           if (res.status === 200 && !this.saveQuestioner) {
-            await this.updateDataInIndexDb(submissionData);
-  
-            this.formIsNotDirty();
-            const footer = this.el.nativeElement.querySelector('.footer-buttons');
-            this.renderer.setStyle(footer, 'display', 'none');
-            this.sendMessage({ type: 'TOAST', data: { message: `Your ${this?.assessment?.solution?.name} has been submitted successfully.`, toastType: 'success' } }, '*');
-            this.evidence.isSubmitted = true;
-  
-            setTimeout(() => {
-              // this.location.back();
+            if(isDraftServerAction){
+              await this.submitSurveyWithConfirmation(submissionData);
+              this.buttonLoading = false;
+            } else { 
+              await this.updateDataInIndexDb(submissionData);
+              this.formIsNotDirty();
+              const footer = this.el.nativeElement.querySelector('.footer-buttons');
+              this.renderer.setStyle(footer, 'display', 'none');
+              this.sendMessage({ type: 'TOAST', data: { message: `Your ${this?.assessment?.solution?.name} has been submitted successfully.`, toastType: 'success' } }, '*');
+              this.evidence.isSubmitted = true;
+    
+              setTimeout(() => {
+                // this.location.back();
 
-              this.sendMessage({
-                type: 'submissionSuccess',
-                data: {
-                  submissionId: this.submissionId,
-                  evidenceCode: this.evidenceCode
-                }
-              }, '*');
-            }, 1000);
+                this.sendMessage({
+                  type: 'submissionSuccess',
+                  data: {
+                    submissionId: this.submissionId,
+                    evidenceCode: this.evidenceCode
+                  }
+                }, '*');
+              }, 1000);
+            }
           } else {
-            this.sendMessage({ type: 'TOAST', data: { message: res?.message || 'Submission failed', toastType: 'danger' } }, '*');
+            let message = res?.message || 'Submission failed';
+            if(isDraftServerAction){
+              message = 'save progress failed';
+            }
+            this.sendMessage({ type: 'TOAST', data: { message, toastType: 'danger' } }, '*');
             this.evidence.isSubmitted = false;
             await this.updateDataInIndexDb({ ...submissionData, status: 'draft' });
           }
         });
-  
     } else {
-      const responseFromUpdateDataFunction = await this.updateDataInIndexDb(submissionData);
-      if (responseFromUpdateDataFunction && !this.saveQuestioner) {
-        this.formIsNotDirty();
-        if (this.questionnaireForm.dirty && !this.isDateAutoSave) {
-          this.sendMessage({ type: 'TOAST', data: { message: 'Your changes have been saved.', toastType: 'success' } }, '*');
-        }
-        this.isDateAutoSave = false;
-      }
+      await this.submitSurveyWithConfirmation(submissionData);
+      this.buttonLoading = false;
     }
   }
   
@@ -1249,6 +1282,31 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
   closeModal() {
     this.dialog.closeAll();
+  }
+
+  /** True when the last section tab is active (for Next tab button). */
+  get isLastSectionActive(): boolean {
+    if (!this.sections?.length) {
+      return true;
+    }
+    const idx = Number(this.sectionIndex);
+    const safeIdx = Number.isNaN(idx) ? 0 : idx;
+    return safeIdx >= this.sections.length - 1;
+  }
+
+  /** Advance to the next section tab (Material tab group stays in sync via setSection). */
+  async goToNextTab(): Promise<void> {
+    if (
+      this.apiConfig?.showNextTabButton !== true ||
+      !this.sections ||
+      this.sections.length <= 1 ||
+      this.isLastSectionActive
+    ) {
+      return;
+    }
+    const idx = Number(this.sectionIndex);
+    const safeIdx = Number.isNaN(idx) ? 0 : idx;
+    await this.setSection(safeIdx + 1);
   }
 
   onTabChange(newIndex: number) {

@@ -63,6 +63,7 @@
             </div>
 
               <!-- <button
+                mat-fab extended 
                 class="btn btn-primary mr-2"
                 (click)="startQuestioner()"
                 *ngIf="
@@ -77,21 +78,41 @@
               >
                 Start
               </button> -->
-              <button
+
+            <button
+              mat-fab extended 
               class="btn btn-primary btn-draft mr-2"
               (click)="
                 submission('draft')
               "
               *ngIf="apiConfig?.showSaveDraftButton === true"
+              [disabled]="buttonLoading"
             >
+              <mat-icon *ngIf="buttonLoading">autorenew</mat-icon>
               Save Progress
             </button>
             <button
+              mat-fab
+              extended
+              type="button"
+              class="btn btn-outline-secondary mr-2"
+              *ngIf="apiConfig?.showNextTabButton === true && sections?.length > 1"
+              (click)="goToNextTab()"
+              [disabled]="isLastSectionActive || buttonLoading"
+              [attr.aria-disabled]="isLastSectionActive || buttonLoading"
+            >
+              <mat-icon *ngIf="buttonLoading">autorenew</mat-icon>
+              Next tab
+            </button>
+            <button mat-fab extended 
               class="btn btn-primary mr-2"
               (click)="handleSubmitClick()"
+              [disabled]="buttonLoading"
             >
+              <mat-icon *ngIf="buttonLoading">autorenew</mat-icon>
               Submit
             </button>
+            
           </div>
         </div>
       </div>
