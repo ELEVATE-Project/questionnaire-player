@@ -95,7 +95,7 @@
               mat-fab
               extended
               type="button"
-              class="btn btn-outline-secondary mr-2"
+              class="btn btn-primary btn-next-tab mr-2"
               *ngIf="apiConfig?.showNextTabButton === true && sections?.length > 1"
               (click)="goToNextTab()"
               [disabled]="isLastSectionActive || buttonLoading"

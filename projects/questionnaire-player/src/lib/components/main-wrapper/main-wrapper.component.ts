@@ -84,7 +84,13 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   initialized = false;
   isDateAutoSave:boolean = false;
   private _formValueChangesSub: Subscription | null = null;
-  
+  /** True when assessment state was hydrated from IndexedDB in this check (skip config defaults). */
+  private _loadedFromIndexedDb = false;
+  /** Ensures applyDefaultValuesAfterLoad runs at most once per submission unless submission id changes. */
+  private _applyDefaultValuesRunOnce = false;
+  private _defaultsBoundSubmissionId: string | null = null;
+  private _defaultValuesRetryCount = 0;
+  private readonly _defaultValuesMaxRetries = 40;
 
   constructor(
     public fb: FormBuilder,
@@ -420,6 +426,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async checkAndMapIndexDbDataToVariables() {
+    this._loadedFromIndexedDb = false;
     const queryParamsData = await this.getQueryParms();
 
     const indexDbKey = queryParamsData?.indexDbKey;
@@ -433,6 +440,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       }
     }
     if (currentObservation) {
+      this._loadedFromIndexedDb = true;
       this.assessment = this.questionnaireService.mapSubmissionToAssessment(
         currentObservation
       );
@@ -530,125 +538,147 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       );
       this.isExpired = this.assessment?.assessment?.status == 'expired';
       this.sections = this.evidence?.sections;
-      
-      // Apply default values after page loads, then set loaded = true
-      await this.applyDefaultValuesAfterLoad();
-    } else {
-      // Apply default values after page loads, then set loaded = true
-      await this.applyDefaultValuesAfterLoad();
     }
+    // Single idempotent pass (also runs when data came from IndexedDB — that path skips applying defaults).
+    await this.applyDefaultValuesAfterLoad();
   }
 
   /**
-   * Apply default values to assessment.submissions after page loads
+   * Apply default values from apiConfig once per submission when there is no IndexedDB snapshot
+   * and no existing answer for each question (including mock/API payload). Idempotent for repeated calls.
    */
   async applyDefaultValuesAfterLoad() {
-    // Wait for everything to be ready
     if (!this.assessment || !this.evidence || !this.evidenceCode || !this.sections) {
-      setTimeout(() => this.applyDefaultValuesAfterLoad(), 500);
+      this._defaultValuesRetryCount++;
+      if (this._defaultValuesRetryCount <= this._defaultValuesMaxRetries) {
+        setTimeout(() => this.applyDefaultValuesAfterLoad(), 500);
+      } else {
+        this.loaded = true;
+      }
+      return;
+    }
+    this._defaultValuesRetryCount = 0;
+
+    const sid =
+      this.assessment?.assessment?.submissionId != null
+        ? String(this.assessment.assessment.submissionId)
+        : null;
+    if (sid !== this._defaultsBoundSubmissionId) {
+      this._applyDefaultValuesRunOnce = false;
+      this._defaultsBoundSubmissionId = sid;
+    }
+
+    if (this._applyDefaultValuesRunOnce) {
+      this.loaded = true;
       return;
     }
 
-    // Check if defaultValues exist
-    if (this.apiConfig?.defaultValues) {
-      // Ensure submissions object exists
-      if (!this.assessment.assessment.submissions) {
-        this.assessment.assessment.submissions = {};
-      }
-      
-      // Ensure submission for this evidenceCode exists
-      if (!this.assessment.assessment.submissions[this.evidenceCode]) {
-        this.assessment.assessment.submissions[this.evidenceCode] = {
-          externalId: this.evidenceCode,
-          answers: {},
-          startTime: Date.now(),
-          endTime: this.endDate || null,
-          gpsLocation: null,
-          submittedBy: '',
-          submittedByName: '',
-          submissionDate: new Date().toISOString(),
-          isValid: true,
-          status: 'draft',
-          progressStatus: 'notStarted',
-          pageProgressValue: 0,
-          completePercentage: 0
-        };
+    const shouldSkipDefaults =
+      !this.apiConfig?.defaultValues ||
+      this._loadedFromIndexedDb;
+
+    if (shouldSkipDefaults) {
+      this._applyDefaultValuesRunOnce = true;
+      this.loaded = true;
+      return;
+    }
+
+    // Ensure submissions object exists
+    if (!this.assessment.assessment.submissions) {
+      this.assessment.assessment.submissions = {};
+    }
+
+    if (!this.assessment.assessment.submissions[this.evidenceCode]) {
+      this.assessment.assessment.submissions[this.evidenceCode] = {
+        externalId: this.evidenceCode,
+        answers: {},
+        startTime: Date.now(),
+        endTime: this.endDate || null,
+        gpsLocation: null,
+        submittedBy: '',
+        submittedByName: '',
+        submissionDate: new Date().toISOString(),
+        isValid: true,
+        status: 'draft',
+        progressStatus: 'notStarted',
+        pageProgressValue: 0,
+        completePercentage: 0
+      };
+    }
+
+    if (!this.assessment.assessment.submissions[this.evidenceCode].answers) {
+      this.assessment.assessment.submissions[this.evidenceCode].answers = {};
+    }
+
+    const answersRef =
+      this.assessment.assessment.submissions[this.evidenceCode].answers;
+    let appliedAny = false;
+
+    Object.keys(this.apiConfig.defaultValues).forEach((qId) => {
+      const defaultConfig = this.apiConfig.defaultValues![qId];
+      if (defaultConfig?.value === undefined || defaultConfig?.value === null) {
+        return;
       }
 
-      // Ensure answers object exists
-      if (!this.assessment.assessment.submissions[this.evidenceCode].answers) {
-        this.assessment.assessment.submissions[this.evidenceCode].answers = {};
+      // Skip if mock/API/IndexedDB already has an answer for this question
+      if (answersRef[qId]) {
+        return;
       }
 
-      // Apply default values to submissions AND question objects
-      Object.keys(this.apiConfig.defaultValues).forEach(qId => {
-        const defaultConfig = this.apiConfig.defaultValues[qId];
-        if (defaultConfig?.value !== undefined && defaultConfig?.value !== null) {
-          const valueToSet = typeof defaultConfig.value === 'number' 
-            ? String(defaultConfig.value) 
-            : defaultConfig.value;
-          
-          // Find question to set value and get responseType
-          let questionFound = null;
-          let responseType = 'text';
-          
-          for (const section of this.sections || []) {
-            for (const question of section.questions || []) {
-              if (question._id === qId) {
-                questionFound = question;
-                responseType = question.responseType;
-                // Set value on question object so it appears in form
-                question.value = valueToSet;
-                question.readonly = defaultConfig.readonly === true;
-                break;
-              }
-              // Check pageQuestions
-              if (question.pageQuestions) {
-                for (const pq of question.pageQuestions) {
-                  if (pq._id === qId) {
-                    questionFound = pq;
-                    responseType = pq.responseType;
-                    // Set value on pageQuestion object
-                    pq.value = valueToSet;
-                    pq.readonly = defaultConfig.readonly === true;
-                    break;
-                  }
-                }
-              }
-            }
+      const valueToSet =
+        typeof defaultConfig.value === 'number'
+          ? String(defaultConfig.value)
+          : defaultConfig.value;
+
+      let responseType = 'text';
+
+      findQuestion: for (const section of this.sections || []) {
+        for (const question of section.questions || []) {
+          if (question._id === qId) {
+            responseType = question.responseType;
+            question.value = valueToSet;
+            question.readonly = defaultConfig.readonly === true;
+            break findQuestion;
           }
-          
-          // Only set in submissions if answer doesn't already exist
-          if (!this.assessment.assessment.submissions[this.evidenceCode].answers[qId]) {
-            this.assessment.assessment.submissions[this.evidenceCode].answers[qId] = {
-              value: valueToSet,
-              remarks: '',
-              fileName: [],
-              endTime: Date.now(),
-              responseType: responseType
-            };
-          }
-          
-          // Update form control if it exists
-          if (this.questionnaireForm && this.questionnaireForm.controls[qId]) {
-            const control = this.questionnaireForm.controls[qId];
-            control.setValue(valueToSet, { emitEvent: false });
-            if (defaultConfig.readonly === true) {
-              control.disable();
+          if (question.pageQuestions) {
+            for (const pq of question.pageQuestions) {
+              if (pq._id === qId) {
+                responseType = pq.responseType;
+                pq.value = valueToSet;
+                pq.readonly = defaultConfig.readonly === true;
+                break findQuestion;
+              }
             }
           }
         }
-      });
+      }
 
-      // Update IndexDB with default values
-      const submissionData = {
-        status: 'draft',
-        answers: this.assessment.assessment.submissions[this.evidenceCode].answers
+      answersRef[qId] = {
+        value: valueToSet,
+        remarks: '',
+        fileName: [],
+        endTime: Date.now(),
+        responseType: responseType
       };
-      await this.updateDataInIndexDb(submissionData);
+      appliedAny = true;
+
+      if (this.questionnaireForm?.controls[qId]) {
+        const control = this.questionnaireForm.controls[qId];
+        control.setValue(valueToSet, { emitEvent: false });
+        if (defaultConfig.readonly === true) {
+          control.disable();
+        }
+      }
+    });
+
+    if (appliedAny) {
+      await this.updateDataInIndexDb({
+        status: 'draft',
+        answers: answersRef
+      });
     }
 
-    // Set loaded = true after applying default values
+    this._applyDefaultValuesRunOnce = true;
     this.loaded = true;
   }
 
