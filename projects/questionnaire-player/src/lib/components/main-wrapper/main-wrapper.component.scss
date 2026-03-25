@@ -292,6 +292,10 @@
   margin-top: 1rem;
 }
 
+.spinner-button ::ng-deep circle {
+  stroke: gray !important;
+}
+
 @media (max-width: 600px) {
   .upload-text,
   .upload-text .progress {

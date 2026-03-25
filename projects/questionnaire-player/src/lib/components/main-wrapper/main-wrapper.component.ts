@@ -84,6 +84,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   initialized = false;
   isDateAutoSave:boolean = false;
   private _formValueChangesSub: Subscription | null = null;
+  private _formValidityValueChangesSub: Subscription | null = null;
   /** True when assessment state was hydrated from IndexedDB in this check (skip config defaults). */
   private _loadedFromIndexedDb = false;
   /** Ensures applyDefaultValuesAfterLoad runs at most once per submission unless submission id changes. */
@@ -151,20 +152,13 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       this.setApiService();
       let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
       if(this.apiConfig.mockData) {
-        this.setValue(this.apiConfig.mockData)
+        await this.setValue(this.apiConfig.mockData)
       } else if (!isDataInlocalSotrage) {
         this.setApiService();
         initialResponse = this.apiService.stateData ? await this.getQuestions(this.apiService.stateData) : await this.fetchDetails();
       }
 
-      setTimeout(async () => {
-        if (Array.isArray(this.sections) && this.sections.length > 0) {
-          await this.setSection(this.sectionIndex);
-        } else {
-          console.warn('Skipping setSection; sections not ready yet (ngOnInit/ngOnChanges).');
-        }
-      }, 1000);
-  
+      // setSection is invoked from setValue / getQuestions / check — avoid a delayed second call (re-triggers tab UI)
     }
 
     if (changes['saveQuestioner']) {
@@ -177,13 +171,32 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   async ngOnInit() {
     this.toaster.clearToaster();
 
+    if (!this.questionnaireForm) {
+      this.questionnaireForm = this.fb.group({});
+    }
+    if (!this._formValidityValueChangesSub) {
+      this._formValidityValueChangesSub = this.questionnaireForm.valueChanges
+        .pipe(debounceTime(300), distinctUntilChanged())
+        .subscribe((data: any) => {
+          this.checkFormValidity();
+        });
+    }
+
+    if (
+      this.apiConfig &&
+      typeof this.apiConfig !== 'string' &&
+      typeof this.apiconfig !== 'string'
+    ) {
+      this.setApiService();
+    }
+
     let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
     if (typeof this.apiConfig === 'string' || typeof this.apiconfig === 'string') {
       try {
         let data = this.apiConfig || this.apiconfig || '{}';
         this.apiConfig = JSON.parse(data);
         if(this.apiConfig.mockData) {
-          this.setValue(this.apiConfig.mockData)
+          await this.setValue(this.apiConfig.mockData)
         } else if (!isDataInlocalSotrage) {
           this.setApiService();
           this.apiService.stateData ? this.getQuestions(this.apiService.stateData) : this.fetchDetails();
@@ -191,29 +204,14 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       } catch (error) {
         throw new Error('Invalid Assessment Structure', error);
       }
+    } else if (this.apiConfig?.mockData) {
+      await this.setValue(this.apiConfig.mockData);
+    } else if (!isDataInlocalSotrage) {
+      this.setApiService();
+      this.apiService.stateData ? this.getQuestions(this.apiService.stateData) : this.fetchDetails();
     }
 
-    setTimeout(async () => {
-      if (Array.isArray(this.sections) && this.sections.length > 0) {
-        await this.setSection(this.sectionIndex);
-      } else {
-        console.warn('Skipping setSection; sections not ready yet (ngOnInit/ngOnChanges).');
-      }
-    }, 1000);
-
-
-    this.questionnaireForm = this.fb.group({});
-
-    // Initial subscription for form validity check only
-    // Progress calculation will be handled in setSection subscription via updateDataInIndexDb
-    this.questionnaireForm.valueChanges
-    .pipe(
-      debounceTime(300),
-      distinctUntilChanged()
-    )
-    .subscribe((data: any) => {
-      this.checkFormValidity();
-    })
+    // setSection runs from check / setValue / getQuestions — no delayed duplicate (was causing second tab activation on refresh)
     this.attachmentService.trigger$.subscribe(() => {
       // Calculate progress before updating IndexDB using unified method
       this.calculateInitialProgress();
@@ -431,7 +429,9 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
     const indexDbKey = queryParamsData?.indexDbKey;
     let indexdbData = await this.db.getData(indexDbKey);
-    let currentObservation = indexdbData?.data || this.apiConfig?.mockData ;
+    const hasIndexedDbSnapshot = !!indexdbData?.data;
+    // IndexedDB only here — mock/API payload is applied once via setValue to avoid a flash of defaults then a second paint
+    let currentObservation = indexdbData?.data;
 
     if (this.solutionType === "survey") {
       const submissions = currentObservation?.assessment?.submissions;
@@ -440,7 +440,8 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       }
     }
     if (currentObservation) {
-      this._loadedFromIndexedDb = true;
+      // Only true when we hydrated from IndexedDB — mock/API fallback must still allow defaultValues
+      this._loadedFromIndexedDb = hasIndexedDbSnapshot;
       this.assessment = this.questionnaireService.mapSubmissionToAssessment(
         currentObservation
       );
@@ -461,12 +462,12 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
       this.setSection(this.sectionIndex);
 
-      this.questionnaireForm = this.fb.group({});
+      if (!this.questionnaireForm) {
+        this.questionnaireForm = this.fb.group({});
+      }
 
-      this.questionnaireForm.valueChanges.subscribe((data: any) => {
-        this.checkFormValidity();
-      })
-      
+      // Form validity: ngOnInit subscribes to questionnaireForm.valueChanges
+
       // Calculate initial progress after form controls are initialized in one line.
       setTimeout(() => {
         this.calculateInitialProgress();
@@ -528,6 +529,8 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
     this.enableDisableStartBtn(this.assessment.assessment.evidences[0]);
     if (!isDataInlocalSotrage) {
+      // Fresh payload from setValue — re-merge defaults with submission answers (same id can ship updated mock/API data)
+      this._applyDefaultValuesRunOnce = false;
       this.setDataInIndexDb(this.submissionId);
       this.evidence = this.solutionType == 'observation' ? this.assessment?.assessment?.evidences[+[this.apiConfig.index]] : this.assessment?.assessment?.evidences[0];
       this.evidence.startTime = Date.now();
@@ -538,8 +541,12 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       );
       this.isExpired = this.assessment?.assessment?.status == 'expired';
       this.sections = this.evidence?.sections;
+      if (!this.questionnaireForm) {
+        this.questionnaireForm = this.fb.group({});
+      }
+      await this.setSection(this.sectionIndex);
     }
-    // Single idempotent pass (also runs when data came from IndexedDB — that path skips applying defaults).
+    // Single pass per load; IndexedDB path skips applying config defaults
     await this.applyDefaultValuesAfterLoad();
   }
 
@@ -1576,6 +1583,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       this.setDataInIndexDb(this.submissionId);
     }
     if (!isDataInlocalSotrage) {
+      this._applyDefaultValuesRunOnce = false;
       this.evidence = this.solutionType == 'observation' ? this.assessment?.assessment?.evidences[+[this.apiConfig.index]] : this.assessment?.assessment?.evidences[0];
       this.evidence.startTime = Date.now();
       this.endDate = new Date(
@@ -1585,8 +1593,10 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       );
       this.isExpired = this.assessment?.assessment?.status == 'expired';
       this.sections = this.evidence?.sections;
-      
-      // Apply default values after page loads, then set loaded = true
+      if (!this.questionnaireForm) {
+        this.questionnaireForm = this.fb.group({});
+      }
+      await this.setSection(this.sectionIndex);
       await this.applyDefaultValuesAfterLoad();
     }
   }

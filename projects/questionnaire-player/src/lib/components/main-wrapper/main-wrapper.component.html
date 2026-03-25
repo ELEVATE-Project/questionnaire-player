@@ -88,8 +88,10 @@
               *ngIf="apiConfig?.showSaveDraftButton === true"
               [disabled]="buttonLoading"
             >
-              <mat-icon *ngIf="buttonLoading">autorenew</mat-icon>
-              Save Progress
+              <span class="d-flex flex-dr flex-ai-center flex-jc-center flex-gap-10">  
+                <mat-spinner class="spinner-button" [diameter]="20" [strokeWidth]="3" *ngIf="buttonLoading"></mat-spinner>
+                <span>Save Progress</span>
+              </span>
             </button>
             <button
               mat-fab
@@ -101,18 +103,21 @@
               [disabled]="isLastSectionActive || buttonLoading"
               [attr.aria-disabled]="isLastSectionActive || buttonLoading"
             >
-              <mat-icon *ngIf="buttonLoading">autorenew</mat-icon>
-              Next tab
+              <span class="d-flex flex-dr flex-ai-center flex-jc-center flex-gap-10">  
+                <mat-spinner class="spinner-button" [diameter]="20" [strokeWidth]="3" *ngIf="buttonLoading"></mat-spinner>
+                <span>Next tab</span>
+              </span>
             </button>
             <button mat-fab extended 
               class="btn btn-primary mr-2"
               (click)="handleSubmitClick()"
               [disabled]="buttonLoading"
             >
-              <mat-icon *ngIf="buttonLoading">autorenew</mat-icon>
-              Submit
+              <span class="d-flex flex-dr flex-ai-center flex-jc-center flex-gap-10">  
+                <mat-spinner class="spinner-button" [diameter]="20" [strokeWidth]="3" *ngIf="buttonLoading"></mat-spinner>
+                <span>Submit</span>
+              </span>
             </button>
-            
           </div>
         </div>
       </div>
