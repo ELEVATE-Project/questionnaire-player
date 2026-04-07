@@ -546,13 +546,37 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       }
       await this.setSection(this.sectionIndex);
     }
-    // Single pass per load; IndexedDB path skips applying config defaults
+    // Single pass per load; apply config defaults only when the current answer is missing or empty
     await this.applyDefaultValuesAfterLoad();
   }
 
+  private hasMeaningfulAnswerValue(answer: any): boolean {
+    const value =
+      answer && typeof answer === 'object' && 'value' in answer
+        ? answer.value
+        : answer;
+
+    if (Array.isArray(value)) {
+      return value.some(
+        (item) =>
+          item !== undefined &&
+          item !== null &&
+          item !== '' &&
+          (typeof item !== 'string' || item.trim() !== '')
+      );
+    }
+
+    return !(
+      value === undefined ||
+      value === null ||
+      value === '' ||
+      (typeof value === 'string' && value.trim() === '')
+    );
+  }
+
   /**
-   * Apply default values from apiConfig once per submission when there is no IndexedDB snapshot
-   * and no existing answer for each question (including mock/API payload). Idempotent for repeated calls.
+   * Apply default values from apiConfig once per submission when there is no existing
+   * non-empty answer for each question (including IndexedDB/mock/API payload). Idempotent for repeated calls.
    */
   async applyDefaultValuesAfterLoad() {
     if (!this.assessment || !this.evidence || !this.evidenceCode || !this.sections) {
@@ -580,9 +604,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       return;
     }
 
-    const shouldSkipDefaults =
-      !this.apiConfig?.defaultValues ||
-      this._loadedFromIndexedDb;
+    const shouldSkipDefaults = !this.apiConfig?.defaultValues;
 
     if (shouldSkipDefaults) {
       this._applyDefaultValuesRunOnce = true;
@@ -627,8 +649,8 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
         return;
       }
 
-      // Skip if mock/API/IndexedDB already has an answer for this question
-      if (answersRef[qId]) {
+      // Keep existing mock/API/IndexedDB values unless the stored value is empty
+      if (this.hasMeaningfulAnswerValue(answersRef[qId])) {
         return;
       }
 
