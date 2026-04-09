@@ -1098,6 +1098,8 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
           this.sendMessage({ type: 'TOAST', data: { message: 'Your changes have been saved.', toastType: 'success' } }, '*');
         }
         return true;
+      } else {
+        this.sendMessage({ type: 'TOAST', data: { message: 'No changes to save.', toastType: 'info' } }, '*');
       }
       if(showConfirmation){
         this.isDateAutoSave = false;
