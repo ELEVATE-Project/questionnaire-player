@@ -1291,6 +1291,9 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       idx = 0;
     }
     idx = Math.max(0, Math.min(idx, this.sections.length - 1));
+    const previousIndex = Number(this.sectionIndex);
+    const safePreviousIndex = Number.isNaN(previousIndex) ? 0 : previousIndex;
+    const didSectionChange = safePreviousIndex !== idx;
     this.sectionIndex = idx;
     const section = this.sections[idx];
     if (!section) {
@@ -1305,6 +1308,9 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     }
     
     this.enableRelevantPage();
+    if (didSectionChange) {
+      this.scrollToTopOnTabChange();
+    }
     
     // Wait a bit for Material tabs to update before calling enableRelevantPage on main component
     setTimeout(() => {
@@ -1383,6 +1389,17 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
         }
       }
       this.setSection(newIndex);
+    }
+  }
+
+  private scrollToTopOnTabChange(): void {
+    // Works for both normal page scrolling and scrollable container hosts.
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.el?.nativeElement?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const wrapperElement = this.el?.nativeElement?.querySelector('.wrapper');
+    if (wrapperElement && typeof wrapperElement.scrollTo === 'function') {
+      wrapperElement.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 
