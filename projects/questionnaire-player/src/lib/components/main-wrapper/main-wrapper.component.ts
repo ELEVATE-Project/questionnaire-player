@@ -119,18 +119,30 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   sendMessage(message: any, target?: string) {
-    // Dispatch custom event for web component listeners
+    // 1. Dispatch custom event (for web components)
     const customEvent = new CustomEvent('postMessage', {
       detail: message,
       bubbles: true,
       cancelable: true
     });
     this.el.nativeElement.dispatchEvent(customEvent);
-    
-    // Keep window.postMessage for backward compatibility
-    window.postMessage(message, target || '*');
-
-    // If message type is TOAST and config allows, show toast
+  
+    // 2. Detect React Native WebView safely
+    const isRNWebView =
+      typeof window !== 'undefined' &&
+      (window as any).ReactNativeWebView &&
+      typeof (window as any).ReactNativeWebView.postMessage === 'function';
+  
+    // 3. Send message based on platform
+    if (isRNWebView) {
+      (window as any).ReactNativeWebView.postMessage(
+        JSON.stringify(message)
+      );
+    } else {
+      window.parent.postMessage(message, target || '*');
+    }
+  
+    // 4. Toast handling
     if (message.type === 'TOAST' && message.data) {
       const showToast = this.apiConfig?.showToast !== false;
       if (showToast) {
