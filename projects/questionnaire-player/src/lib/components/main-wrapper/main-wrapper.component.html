@@ -89,7 +89,7 @@
               [disabled]="buttonLoading"
             >
               <span class="d-flex flex-dr flex-ai-center flex-jc-center flex-gap-10">  
-                <mat-spinner class="spinner-button" [diameter]="20" [strokeWidth]="3" *ngIf="buttonLoading"></mat-spinner>
+                <mat-spinner class="spinner-button" [diameter]="20" [strokeWidth]="3" *ngIf="buttonLoading === 'draft'"></mat-spinner>
                 <span>Save Progress</span>
               </span>
             </button>
@@ -104,7 +104,6 @@
               [attr.aria-disabled]="isLastSectionActive || buttonLoading"
             >
               <span class="d-flex flex-dr flex-ai-center flex-jc-center flex-gap-10">  
-                <mat-spinner class="spinner-button" [diameter]="20" [strokeWidth]="3" *ngIf="buttonLoading"></mat-spinner>
                 <span>Next tab</span>
               </span>
             </button>
@@ -114,7 +113,7 @@
               [disabled]="buttonLoading"
             >
               <span class="d-flex flex-dr flex-ai-center flex-jc-center flex-gap-10">  
-                <mat-spinner class="spinner-button" [diameter]="20" [strokeWidth]="3" *ngIf="buttonLoading"></mat-spinner>
+                <mat-spinner class="spinner-button" [diameter]="20" [strokeWidth]="3" *ngIf="buttonLoading === 'submit'"></mat-spinner>
                 <span>Submit</span>
               </span>
             </button>

@@ -87,6 +87,7 @@ export interface Question {
   placeHolder: string;
   icon?: string;
   question: string;
+  sectionDescription: string;
   isCompleted: boolean;
   showRemarks: string;
   options: any;

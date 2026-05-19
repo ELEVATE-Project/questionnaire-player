@@ -73,7 +73,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   evidenceCode: any;
   solutionType: any;
   uploading: boolean = false;
-  buttonLoading: boolean = false;
+  buttonLoading: boolean | "submit" | "draft" = false;
   totalFileToUpload: any = 0;
   currentFileUploaded = 0;
   sectionIndex: any = 0;
@@ -1121,7 +1121,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async submitSurvey(submissionData) {
-    this.buttonLoading = true;
+    this.buttonLoading = submissionData.status;
     const isDraftServerAction = this.apiConfig?.saveProgressStorageType === 'server' && submissionData.status === 'draft';
     if (submissionData.status !== 'draft' || this.apiConfig?.saveProgressStorageType === 'server') {
       if(isDraftServerAction){
