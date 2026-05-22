@@ -362,8 +362,8 @@ export class FileUploadInputComponent implements OnInit {
   
     const response = await this.postMessageListener(shareOptions);
     if (!response) {
-      if (file.previewUrl) {
-        url = file.previewUrl;
+      if (file?.previewUrl) {
+        url = file.previewUrl ? file.previewUrl.split('?')[0] : undefined;
       } else {
         if (!base64Data || typeof base64Data !== 'string' || base64Data.trim() === "") {
           this.openAlert({
