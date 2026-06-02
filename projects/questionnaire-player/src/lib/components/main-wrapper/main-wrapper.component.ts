@@ -111,6 +111,10 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
   ) { }
 
+  private get isOffline(): boolean {
+    return this.apiConfig?.offline === true;
+  }
+
   checkFormValidity() {
     this.sendMessage({
       type: 'formDirty',
@@ -152,6 +156,76 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     }
   }
 
+  private buildOfflinePayload(submissionData: any): any {
+    // Deep-clone the assessment so we can safely merge the latest answers without
+    // mutating component state, then stamp the current submission answers into it.
+    const assessmentSnapshot = this.assessment
+      ? JSON.parse(JSON.stringify(this.assessment))
+      : null;
+
+    if (assessmentSnapshot?.assessment?.submissions && this.evidenceCode && submissionData?.answers) {
+      if (!assessmentSnapshot.assessment.submissions[this.evidenceCode]) {
+        assessmentSnapshot.assessment.submissions[this.evidenceCode] = { answers: {} };
+      }
+      assessmentSnapshot.assessment.submissions[this.evidenceCode].answers = submissionData.answers;
+      assessmentSnapshot.assessment.submissions[this.evidenceCode].status = submissionData.status ?? 'draft';
+    }
+
+    return {
+      submissionId: this.assessment?.assessment?.submissionId,
+      evidenceCode: this.evidenceCode,
+      solutionType: this.solutionType,
+      ...submissionData,
+      assessment: assessmentSnapshot
+    };
+  }
+
+  private async handleOfflineSubmission(submissionData: any): Promise<void> {
+    const isSubmit = submissionData.status === 'submit';
+
+    if (isSubmit && !this.saveQuestioner) {
+      const confirmationParams = {
+        title: 'Confirmation',
+        message: `Are you sure you want to submit the ${this?.assessment?.solution?.name}?`,
+        actionBtns: true,
+        cancelLabel: 'Cancel',
+        acceptLabel: 'Confirm',
+      };
+      const confirmed = await this.openAlert(confirmationParams);
+      if (!confirmed) return;
+    }
+
+    await this.updateDataInIndexDb(submissionData);
+    const payload = this.buildOfflinePayload(submissionData);
+
+    if (!isSubmit) {
+      console.log('[Offline] Sending QUESTIONNAIRE_SAVE — status: DRAFT');
+      this.sendMessage({
+        type: 'QUESTIONNAIRE_SAVE',
+        status: 'DRAFT',
+        data: payload
+      });
+      if (!this.saveQuestioner) {
+        this.formIsNotDirty();
+        this.sendMessage({ type: 'TOAST', data: { message: 'Data saved offline', toastType: 'success' } }, '*');
+      }
+    } else {
+      this.evidence.isSubmitted = true;
+      this.formIsNotDirty();
+      const footer = this.el.nativeElement.querySelector('.footer-buttons');
+      if (footer) this.renderer.setStyle(footer, 'display', 'none');
+      this.sendMessage({ type: 'TOAST', data: { message: 'Data submitted offline', toastType: 'success' } }, '*');
+      console.log('[Offline] Sending QUESTIONNAIRE_SUBMIT — status: SUBMITTED');
+      setTimeout(() => {
+        this.sendMessage({
+          type: 'QUESTIONNAIRE_SUBMIT',
+          status: 'SUBMITTED',
+          data: payload
+        });
+      }, 1000);
+    }
+  }
+
   async ngOnChanges(changes: SimpleChanges) {
     let initialResponse:any; 
 
@@ -166,8 +240,12 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
       if(this.apiConfig.mockData) {
         await this.setValue(this.apiConfig.mockData)
       } else if (!isDataInlocalSotrage) {
-        this.setApiService();
-        initialResponse = this.apiService.stateData ? await this.getQuestions(this.apiService.stateData) : await this.fetchDetails();
+        if (this.isOffline) {
+          console.warn('[Offline] No mockData or IndexedDB data — skipping API fetch in offline mode.');
+        } else {
+          this.setApiService();
+          initialResponse = this.apiService.stateData ? await this.getQuestions(this.apiService.stateData) : await this.fetchDetails();
+        }
       }
 
       // setSection is invoked from setValue / getQuestions / check — avoid a delayed second call (re-triggers tab UI)
@@ -182,7 +260,6 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
   async ngOnInit() {
     this.toaster.clearToaster();
-
     if (!this.questionnaireForm) {
       this.questionnaireForm = this.fb.group({});
     }
@@ -210,8 +287,12 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
         if(this.apiConfig.mockData) {
           await this.setValue(this.apiConfig.mockData)
         } else if (!isDataInlocalSotrage) {
-          this.setApiService();
-          this.apiService.stateData ? this.getQuestions(this.apiService.stateData) : this.fetchDetails();
+          if (this.isOffline) {
+            console.warn('[Offline] Skipping API fetch in offline mode (string apiConfig path).');
+          } else {
+            this.setApiService();
+            this.apiService.stateData ? this.getQuestions(this.apiService.stateData) : this.fetchDetails();
+          }
         }
       } catch (error) {
         throw new Error('Invalid Assessment Structure', error);
@@ -219,8 +300,12 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     } else if (this.apiConfig?.mockData) {
       await this.setValue(this.apiConfig.mockData);
     } else if (!isDataInlocalSotrage) {
-      this.setApiService();
-      this.apiService.stateData ? this.getQuestions(this.apiService.stateData) : this.fetchDetails();
+      if (this.isOffline) {
+        console.warn('[Offline] Skipping API fetch in offline mode.');
+      } else {
+        this.setApiService();
+        this.apiService.stateData ? this.getQuestions(this.apiService.stateData) : this.fetchDetails();
+      }
     }
 
     // setSection runs from check / setValue / getQuestions — no delayed duplicate (was causing second tab activation on refresh)
@@ -511,6 +596,11 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   async fetchDetails() {
+    if (this.isOffline) {
+      console.warn('[Offline] fetchDetails() blocked — running in offline mode.');
+      return;
+    }
+
     const path = this.solutionType == 'observation' ? this.apiConfig.observationId + `?entityId=${this.apiConfig.entityId}&submissionNumber=${this.apiConfig.submissionNumber}&evidenceCode=${this.apiConfig.evidenceCode}` : this.apiConfig.solutionId
 
 
@@ -1122,6 +1212,14 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
   async submitSurvey(submissionData) {
     this.buttonLoading = submissionData.status;
+
+    if (this.isOffline) {
+      console.log('[Offline] submitSurvey intercepted — routing to offline handler. status:', submissionData.status);
+      await this.handleOfflineSubmission(submissionData);
+      this.buttonLoading = false;
+      return;
+    }
+
     const isDraftServerAction = this.apiConfig?.saveProgressStorageType === 'server' && submissionData.status === 'draft';
     if (submissionData.status !== 'draft' || this.apiConfig?.saveProgressStorageType === 'server') {
       if(isDraftServerAction){
@@ -1347,7 +1445,16 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
           status: evidenceData['isSubmitted'] ? "submit" : "draft",
           ...evidenceData,
         };
-        this.updateDataInIndexDb(submissionData).then(() => {});
+        this.updateDataInIndexDb(submissionData).then(() => {
+          if (this.isOffline) {
+            console.log('[Offline] Sending QUESTIONNAIRE_UPDATE — status: IN_PROGRESS');
+            this.sendMessage({
+              type: 'QUESTIONNAIRE_UPDATE',
+              status: 'IN_PROGRESS',
+              data: this.buildOfflinePayload(submissionData)
+            });
+          }
+        });
       });
 
     if(!skipEnableDisableStartBtn){

@@ -271,6 +271,8 @@ export interface ApiConfiguration {
       };
     };
   };
+  /** When true, all server API calls are disabled. Form data is sent to the parent via postMessage instead. */
+  offline?: boolean;
 }
 
 
