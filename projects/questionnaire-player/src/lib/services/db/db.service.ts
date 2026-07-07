@@ -96,16 +96,18 @@ export class DbService {
     if(!downloadData) return
   }
 
-  deleteData(key: any) {
-    const transaction = this.db.transaction([this.storeName], 'readwrite');
-    const store = transaction.objectStore(this.storeName);
-    const request = store.delete(key);
-
-    request.onsuccess = (event) => {};
-
-    request.onerror = (event) => {
-      console.error('Error deleting item: ',);
-    };
+  async deleteData(key: any): Promise<void> {
+    await this.dbInitialized;
+    return new Promise<void>((resolve) => {
+      const transaction = this.db.transaction([this.storeName], 'readwrite');
+      const store = transaction.objectStore(this.storeName);
+      const request = store.delete(key);
+      request.onsuccess = () => resolve();
+      request.onerror = () => {
+        console.error('Error deleting item:');
+        resolve();
+      };
+    });
   }
 
   clearDb(){

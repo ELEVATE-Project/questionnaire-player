@@ -199,7 +199,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     const payload = this.buildOfflinePayload(submissionData);
 
     if (!isSubmit) {
-      console.log('[Offline] Sending QUESTIONNAIRE_SAVE — status: DRAFT');
+      console.log('[Offline] Sending QUESTIONNAIRE_SAVE — status: DRAFT',payload, submissionData);
       this.sendMessage({
         type: 'QUESTIONNAIRE_SAVE',
         status: 'DRAFT',
@@ -517,7 +517,33 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
   async deleteFromIndexDb() {
     const queryParamsData = await this.getQueryParms();
     const indexDbKey = queryParamsData?.indexDbKey;
-    this.db.deleteData(indexDbKey);
+    await this.db.deleteData(indexDbKey);
+  }
+
+  /**
+   * Compares the `submission.updatedAt` timestamp on the incoming mockData against
+   * the locally-stored offline copy.  When mockData is fresher, the stale IndexedDB
+   * entry is deleted so that the immediately-following checkAndMapIndexDbDataToVariables()
+   * treats this as a first render and hydrates from the fresh mockData instead.
+   *
+   * This method is a no-op when mockData carries no `submission` object, keeping
+   * full backward compatibility with any existing usage that omits that field.
+   */
+  private async clearStaleIndexDbIfMockDataFresher(mockData: any): Promise<void> {
+    if (!mockData?.submission) return;
+
+    // submissionId is already set by the caller (setValue) before this is invoked
+    const submissionId = this.submissionId;
+    if (!submissionId) return;
+
+    const indexdbEntry = await this.db.getData(submissionId);
+    if (!indexdbEntry?.data) return; // Nothing stored — first render, nothing to evict
+
+    const offlineSubmission = indexdbEntry.data?.submission;
+    if (this.questionnaireService.shouldUseMockData(mockData.submission, offlineSubmission)) {
+      console.log('[MockData] Fresher mockData detected — evicting stale offline copy for submissionId:', submissionId);
+      await this.db.deleteData(submissionId);
+    }
   }
 
   async checkAndMapIndexDbDataToVariables() {
@@ -628,6 +654,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     this.assessment = this.questionnaireService.mapSubmissionToAssessment(data);
     this.submissionId = this.assessment.assessment.submissionId;
     this.evidenceCode = this.assessment.assessment.evidences[0].code;
+    await this.clearStaleIndexDbIfMockDataFresher(data);
     let isDataInlocalSotrage = await this.checkAndMapIndexDbDataToVariables();
     this.enableDisableStartBtn(this.assessment.assessment.evidences[0]);
     if (!isDataInlocalSotrage) {
@@ -1214,7 +1241,27 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     this.buttonLoading = submissionData.status;
 
     if (this.isOffline) {
-      console.log('[Offline] submitSurvey intercepted — routing to offline handler. status:', submissionData.status);
+      console.log('[Offline] submitSurvey intercepted — routing to offline handler. status:', submissionData);
+      // const answers = submissionData?.answers;
+      // const uploadQueue: any[] = [];
+      // for (let [submissionId, answerObj] of Object.entries(answers)) {
+      //   const files = (answerObj as any).fileName || [];
+      //   for (let file of files) {
+      //     if (!file?.isUploaded) {
+      //       this.totalFileToUpload++;
+      //       const storedFile: any = await this.db.getData(file.name);
+      //       if (!storedFile || !storedFile.data) {
+      //         this.sendMessage({ type: 'TOAST', data: { message: `No stored data found for file: ${file.name}`, toastType: 'danger' } }, '*');
+      //         continue;
+      //       } else {
+      //         file.storedFile = storedFile
+      //       }
+      //       file.submissionId = submissionId;
+      //       uploadQueue.push(file);
+      //     }
+      //   }
+      // }
+      
       await this.handleOfflineSubmission(submissionData);
       this.buttonLoading = false;
       return;

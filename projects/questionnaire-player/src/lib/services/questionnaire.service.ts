@@ -154,6 +154,38 @@ export class QuestionnaireService {
     return this._submissionId;
   }
 
+  /**
+   * Single source of truth for deciding whether fresh mockData should replace
+   * the locally-stored offline copy.
+   *
+   * The component calls this once per load; all future business rules
+   * (status, version, deleted flag, schema version, etc.) belong here so the
+   * component itself never needs to change.
+   *
+   * @param mockSubmission    submission metadata from the latest incoming mockData
+   * @param offlineSubmission submission metadata retrieved from the local offline store
+   * @returns true  → discard offline copy, render mockData
+   *          false → keep offline copy as-is
+   */
+  shouldUseMockData(mockSubmission: any, offlineSubmission: any): boolean {
+    // No offline copy exists — nothing to compare, always use fresh mockData
+    if (!offlineSubmission) return true;
+
+    // mockData carries no submission metadata — cannot assess freshness, keep offline
+    if (!mockSubmission) return false;
+
+    const mockUpdatedAt: string | undefined = mockSubmission?.updatedAt;
+    const offlineUpdatedAt: string | undefined = offlineSubmission?.updatedAt;
+
+    // mockData has no timestamp — cannot compare, preserve offline copy
+    if (!mockUpdatedAt) return false;
+
+    // Offline copy has no timestamp — mockData wins by default
+    if (!offlineUpdatedAt) return true;
+
+    return new Date(mockUpdatedAt).getTime() > new Date(offlineUpdatedAt).getTime();
+  }
+
   mapSubmissionToAssessment(data) {
     const assessment = data.assessment;
 
