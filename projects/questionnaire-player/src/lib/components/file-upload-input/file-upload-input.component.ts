@@ -307,7 +307,7 @@ export class FileUploadInputComponent implements OnInit {
   
     // Handle image or video preview in modal
     if (type === 'image' || type === 'video' || type === 'audio') {
-      this.objectURL = url;
+      this.objectURL = url ? url.split('?')[0] : undefined;
       this.objectType = type;
       this.dialogRef = this.dialog.open(this.previewModal, {
         width: 'auto',
