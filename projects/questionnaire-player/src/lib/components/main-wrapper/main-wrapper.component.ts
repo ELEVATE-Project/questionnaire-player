@@ -1242,25 +1242,25 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
 
     if (this.isOffline) {
       console.log('[Offline] submitSurvey intercepted — routing to offline handler. status:', submissionData);
-      // const answers = submissionData?.answers;
-      // const uploadQueue: any[] = [];
-      // for (let [submissionId, answerObj] of Object.entries(answers)) {
-      //   const files = (answerObj as any).fileName || [];
-      //   for (let file of files) {
-      //     if (!file?.isUploaded) {
-      //       this.totalFileToUpload++;
-      //       const storedFile: any = await this.db.getData(file.name);
-      //       if (!storedFile || !storedFile.data) {
-      //         this.sendMessage({ type: 'TOAST', data: { message: `No stored data found for file: ${file.name}`, toastType: 'danger' } }, '*');
-      //         continue;
-      //       } else {
-      //         file.storedFile = storedFile
-      //       }
-      //       file.submissionId = submissionId;
-      //       uploadQueue.push(file);
-      //     }
-      //   }
-      // }
+      const answers = submissionData?.answers;
+      const uploadQueue: any[] = [];
+      for (let [submissionId, answerObj] of Object.entries(answers)) {
+        const files = (answerObj as any).fileName || [];
+        for (let file of files) {
+          if (!file?.isUploaded) {
+            this.totalFileToUpload++;
+            const storedFile: any = await this.db.getData(file.name);
+            if (!storedFile || !storedFile.data) {
+              this.sendMessage({ type: 'TOAST', data: { message: `No stored data found for file: ${file.name}`, toastType: 'danger' } }, '*');
+              continue;
+            } else {
+              file.storedFile = storedFile
+            }
+            file.submissionId = submissionId;
+            uploadQueue.push(file);
+          }
+        }
+      }
       
       await this.handleOfflineSubmission(submissionData);
       this.buttonLoading = false;
