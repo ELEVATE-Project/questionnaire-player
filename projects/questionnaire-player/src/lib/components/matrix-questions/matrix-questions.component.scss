@@ -88,6 +88,52 @@
     font-size: 0.875rem;
     color: gray;
   }
+
+  .data-preview {
+    margin-top: 0.75rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    padding-top: 0.5rem;
+    border-top: 1px solid #e0e0e0;
+  }
+
+  .preview-item {
+    display: flex;
+    gap: 0.5rem;
+    font-size: 0.875rem;
+    line-height: 1.4;
+  }
+
+  .preview-label {
+    font-weight: 600;
+    color: #555;
+    flex-shrink: 0;
+  }
+
+  .preview-value {
+    color: #333;
+    word-break: break-word;
+  }
+
+  .more-indicator {
+    margin-top: 0.25rem;
+  }
+
+  .more-text {
+    font-size: 0.813rem;
+    color: var(--primary-color);
+    font-style: italic;
+    font-weight: 500;
+  }
+
+  .instance-details:hover {
+    cursor: pointer;
+  }
+
+  .instance-details:hover .more-text {
+    text-decoration: underline;
+  }
   
   ::ng-deep .mat-mdc-dialog-content.mdc-dialog__content {
     padding: 0 !important;

@@ -9,8 +9,9 @@
     style="width: 100%;"
     type="number"
     [formControlName]="question?._id"
-    min="0"
-    [placeholder]="placeholder"
+    [attr.min]="minValue"
+    [attr.max]="maxValue"
+    [placeholder]="question.placeHolder || placeholder"
     (change)="onChange($event)"
     [value]="question.value"
   />

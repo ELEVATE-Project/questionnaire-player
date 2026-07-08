@@ -1,0 +1,35 @@
+::ng-deep {
+  .mat-mdc-tab-group, .mat-mdc-tab-nav-bar {
+    // Tab indicator (active tab underline)
+    --mdc-tab-indicator-active-indicator-color: var(--primary-color) !important;
+    // Tab label (text) - active
+    --mdc-tab-text-label-color-active: var(--primary-color) !important;
+    // Tab label (text) - inactive
+    --mdc-tab-text-label-color: rgba(0,0,0,0.6) !important;
+    // Pagination icons (left/right tab scroll arrows)
+    --mat-tab-header-pagination-icon-color: var(--primary-color) !important;
+    // Disable ripple color for tab header
+    --mat-tab-header-disabled-ripple-color: var(--primary-color) !important;
+  }
+}
+
+::ng-deep {
+  .section-tabs {
+    .mat-mdc-tab-header {
+      border-bottom: none
+    }
+
+    .mat-mdc-tab-label {
+      min-width: 120px;
+      padding: 12px 24px;
+    }
+
+    .mat-mdc-tab-body-wrapper {
+      padding-top: 1rem;
+    }
+  }
+  .mdc-tab__text-label {
+    gap: 0.5rem;
+  }
+}
+

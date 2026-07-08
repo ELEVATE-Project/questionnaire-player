@@ -24,8 +24,8 @@ export class ApiService {
 
   constructor(private http:HttpClient) { }
 
-  get<T>(url: string, params?: HttpParams): Observable<T> {
-    return this.http.get<T>(this.baseUrl+url, { params });
+  get<T>(url: string, params?: HttpParams, headers?: HttpHeaders): Observable<T> {
+    return this.http.get<T>(this.baseUrl+url, { params, headers });
   }
 
   post<T>(url: string, body: any, headers?: HttpHeaders): Observable<T> {
@@ -34,6 +34,10 @@ export class ApiService {
 
   put<T>(url: string, body: any, headers?: HttpHeaders): Observable<T> {
     return this.http.put<T>(this.baseUrl+url, body, { headers });
+  }
+
+  getWithFullURL<T>(url: string, params?: HttpParams, headers?: HttpHeaders): Observable<T> {
+    return this.http.get<T>(url, { params, headers });
   }
 
   postWithFullURL<T>(url: string, body: any, headers?: HttpHeaders): Observable<T> {

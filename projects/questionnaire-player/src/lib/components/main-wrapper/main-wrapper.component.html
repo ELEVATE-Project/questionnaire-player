@@ -1,110 +1,295 @@
 <div *ngIf="loaded" class="wrapper">
   <div class="initialized">
-  <form [formGroup]="questionnaireForm" class="main custom-font" *ngIf="!uploading;else uplodingModal">
-    <div *ngFor="let section of sections; let secId = index">
+    <form
+      [formGroup]="questionnaireForm"
+      class="main custom-font"
+      *ngIf="!uploading; else uplodingModal"
+    >
+      <lib-section-tabs
+        #sectionTabs
+        [sections]="sections"
+        [questionnaireForm]="questionnaireForm"
+        [isSubmitted]="evidence?.isSubmitted"
+        [isExpired]="isExpired"
+        [fileSizeLimit]="apiConfig.fileSizeLimit"
+        [apiConfig]="apiConfig"
+        [(sectionIndex)]="sectionIndex"
+        (tabChange)="onTabChange($event)"
+      ></lib-section-tabs>
+    </form>
 
-
-      <span [id]="section.name" [ngStyle]="{
-        'pointer-events': (stateData && stateData?.isSurvey === false) || questionNotStarted ? 'none' : 'auto',
-        opacity: (stateData && stateData?.isSurvey === false) || questionNotStarted  ? 0.6 : 1
-      }" *ngIf="section.name">
-        <lib-main #mainComponent [questions]="section.questions" [questionnaireForm]="questionnaireForm"
-          [isSubmitted]="evidence?.isSubmitted" [isExpired]="isExpired"
-          [fileSizeLimit]="apiConfig.fileSizeLimit"></lib-main>
-      </span>
-    </div>
-  </form>
-
-  <ng-container *ngIf="!uploading">
-    <div class="sticky-footer">
-      <hr class="partition" />
-      <div class="footer-buttons">
-        <div *ngIf="!evidence?.isSubmitted && !isExpired"
-          class="m-4 d-flex flex-ai-center flex-jc-space-between flex-dr flex-gap-30">
-          <div>
-            <mat-icon tabindex="0" (keydown)="($event.key == 'Enter' || $event.key == ' ') && getQuestionMap()"
-              (click)="getQuestionMap()" matTooltip="Question Map"
-              style="height: auto;width: auto;color: var(--primary-color);font-size: 40px; margin-left: 15px;cursor: pointer;">format_list_bulleted</mat-icon>
-            <!-- <p class="question-map">Question Map</p> -->
-          </div>
-          <div class="progress-wrapper">
-            <div class="progress my-progress">
-              <div class="progress-bar"
-                   role="progressbar"
-                   [style.width.%]="pageProgressValue"
-                   [attr.aria-valuenow]="pageProgressValue"
-                   aria-valuemin="0" aria-valuemax="100">
-              </div>
+    <ng-container *ngIf="!uploading">
+      <div class="sticky-footer" *ngIf="!evidence?.isSubmitted && !isExpired"
+      >
+        <div class="footer-buttons top-primary-border">
+          <div
+            class="m-4 d-flex flex-ai-center flex-jc-space-between flex-dr flex-gap-30"
+          >
+            <div *ngIf="apiConfig?.showSaveDraftButton !== true">
+              <mat-icon
+                tabindex="0"
+                (keydown)="
+                  ($event.key == 'Enter' || $event.key == ' ') &&
+                    getQuestionMap()
+                "
+                (click)="getQuestionMap()"
+                matTooltip="Question Map"
+                style="
+                  height: auto;
+                  width: auto;
+                  color: var(--primary-color);
+                  font-size: 20px;
+                  margin-left: 15px;
+                  cursor: pointer;
+                "
+                >format_list_bulleted</mat-icon
+              >
+              <!-- <p class="question-map">Question Map</p> -->
             </div>
-            <p class="progress-text">{{ completedPages }} / {{ totalPages }}</p>
-          </div>
-          
-          <div>
-            <button class="btn btn-primary mr-2" (click)="startQuestioner()" *ngIf="(stateData && stateData?.isSurvey === false ) || questionNotStarted" [class.disabled-btn]="((stateData && stateData?.isATargetedSolution == false))">
-              Start
-            </button>
+            <div class="progress-wrapper" *ngIf="apiConfig?.showSaveDraftButton !== true">
+              <div class="progress my-progress">
+                <div
+                  class="progress-bar"
+                  role="progressbar"
+                  [style.width.%]="pageProgressValue"
+                  [attr.aria-valuenow]="pageProgressValue"
+                  aria-valuemin="0"
+                  aria-valuemax="100"
+                ></div>
+              </div>
+              <p class="progress-text">
+                {{ completedPages }} / {{ totalPages }}
+              </p>
+            </div>
 
-            
+              <!-- <button
+                mat-fab extended 
+                class="btn btn-primary mr-2"
+                (click)="startQuestioner()"
+                *ngIf="
+                  (stateData && stateData?.isSurvey === false) ||
+                  questionNotStarted
+                "
+                *** submit condition**** 
+                *ngIf="
+                  ((stateData && stateData?.isSurvey === true) || !stateData) &&
+                  !questionNotStarted
+                "
+              >
+                Start
+              </button> -->
+
             <button
-            class="btn btn-primary mr-2"
-            (click)="!questionnaireForm?.valid ? getQuestionMap() : submission('submit')"
-            *ngIf="((stateData && stateData?.isSurvey === true) || !stateData) && !questionNotStarted">
-            Submit
-          </button>
+              mat-fab extended 
+              class="btn btn-primary btn-draft mr-2"
+              (click)="
+                submission('draft')
+              "
+              *ngIf="apiConfig?.showSaveDraftButton === true"
+              [disabled]="buttonLoading"
+            >
+              <span class="d-flex flex-dr flex-ai-center flex-jc-center flex-gap-10">  
+                <mat-spinner class="spinner-button" [diameter]="20" [strokeWidth]="3" *ngIf="buttonLoading === 'draft'"></mat-spinner>
+                <span>Save Progress</span>
+              </span>
+            </button>
+            <button
+              mat-fab
+              extended
+              type="button"
+              class="btn btn-primary btn-next-tab mr-2"
+              *ngIf="apiConfig?.showNextTabButton === true && sections?.length > 1"
+              (click)="goToNextTab()"
+              [disabled]="isLastSectionActive || buttonLoading"
+              [attr.aria-disabled]="isLastSectionActive || buttonLoading"
+            >
+              <span class="d-flex flex-dr flex-ai-center flex-jc-center flex-gap-10">  
+                <span>Next tab</span>
+              </span>
+            </button>
+            <button mat-fab extended 
+              class="btn btn-primary mr-2"
+              (click)="handleSubmitClick()"
+              [disabled]="buttonLoading"
+            >
+              <span class="d-flex flex-dr flex-ai-center flex-jc-center flex-gap-10">  
+                <mat-spinner class="spinner-button" [diameter]="20" [strokeWidth]="3" *ngIf="buttonLoading === 'submit'"></mat-spinner>
+                <span>Submit</span>
+              </span>
+            </button>
           </div>
         </div>
       </div>
-    </div>
-  </ng-container>
+    </ng-container>
+  </div>
+</div>
 
-</div>
-</div>
 <div class="spinner-overlay" *ngIf="!loaded">
-  <mat-progress-spinner class="spinner" [color]="color" [mode]="mode" [strokeWidth]="strokeWidth">
+  <mat-progress-spinner
+    class="spinner"
+    [color]="color"
+    [mode]="mode"
+    [strokeWidth]="strokeWidth"
+  >
   </mat-progress-spinner>
 </div>
+
+<!-- question map modal -->
 <ng-template #questionMapModal>
-  <div style="padding: 0 4px;">
-    <div mat-dialog-title class="d-flex flex-dr flex-ai-center flex-gap-3 flex-jc-flex-start p-10"
-      style="color: var(--primary-color)">
-      Question Map
-    </div>
-    <mat-divider></mat-divider>
-    <div mat-dialog-content class="qmap">
-      <div class="d-flex flex-dr flex-w-wrap flex-gap-8" style="margin-bottom: 8px;">
-        <span style="color: #080808;"><span
-            style="color: #A30000;font-size: 48px;vertical-align: bottom;">&#x2022;</span> Required & unanswered</span>
-        <span style="color: #080808;"><span
-            style="color:#006600;font-size: 48px;vertical-align: bottom;">&#x2022;</span> Answered</span>
-        <span style="color: #080808;"><span
-            style="color: #595959;font-size: 48px;vertical-align: bottom;">&#x2022;</span> Optional & unanswered</span>
+  <div style="padding: 0 4px">
+    <!-- Incomplete Form UI when showSaveDraftButton is true -->
+    <ng-container *ngIf="apiConfig?.showSaveDraftButton === true; else questionMapView">
+      <div
+        mat-dialog-title
+        class="d-flex flex-dr flex-ai-center flex-jc-space-between flex-gap-3 p-10"
+        style="color: var(--primary-color)"
+      >
+        <div class="d-flex flex-dr flex-ai-center flex-gap-3">
+          <mat-icon style="color: #ffc107; font-size: 24px; width: 24px; height: 24px;">warning</mat-icon>
+          <div class="d-flex flex-dc">
+            <span style="font-weight: bold; font-size: 18px;">Incomplete Form</span>
+            <span style="font-weight: normal; font-size: 14px; color: #080808;">Please complete all required fields</span>
+          </div>
+        </div>
+        <mat-icon 
+          style="cursor: pointer; color: #080808;" 
+          (click)="closeModal()"
+        >close</mat-icon>
       </div>
-      <div *ngFor="let page of questionMap | sortKeys" style="padding: 4px;">
-        <ng-container *ngIf="questionMap[page].length">
-          <div class="d-flex" style="color: #080808;">
-            <div><mat-icon style="vertical-align: middle;">arrow_right</mat-icon></div>
-            <div class="d-flex flex-dc">
-              <ng-container *ngIf="!pageMsg.has(page) else pageWithMsg">{{page}}</ng-container>
-              <ng-template #pageWithMsg> {{page + ' (' + pageMsg.get(page) + ')'}} </ng-template>
-              <div class="d-flex flex-dr flex-gap-8 flex-w-wrap" style="margin: 12px 0;">
-                <ng-container *ngFor="let question of questionMap[page]">
-                  <button (click)="goToQuestion(question._id,question.pageIndex,sectionIndex)" mat-mini-fab [ngStyle]="{
-                  'background-color':question.validity
-                }">
-                    {{ question.questionNumber }}
-                  </button>
-                </ng-container>
-              </div>
+      <mat-divider></mat-divider>
+      <div mat-dialog-content style="padding: 16px; max-height: 60vh; overflow-y: auto;">
+        <p style="margin-bottom: 16px; color: #080808;">Click on any field below to jump directly to it:</p>
+        <div *ngFor="let section of incompleteFields" style="margin-bottom: 12px;">
+          <div 
+            style="
+              border-left: 4px solid #ff6b35;
+              border-radius: 4px;
+              padding: 12px;
+              background-color: #fff;
+              cursor: pointer;
+              transition: box-shadow 0.2s;
+            "
+            (click)="goToQuestion(section.questions[0]._id, section.questions[0].pageIndex, section.questions[0].sectionIndex)"
+            (mouseenter)="$any($event.currentTarget).style.boxShadow = '0 2px 4px rgba(0,0,0,0.1)'"
+            (mouseleave)="$any($event.currentTarget).style.boxShadow = 'none'"
+          >
+            <div style="color: #a30000; font-weight: 600; margin-bottom: 8px; font-size: 14px;">
+              {{ section.sectionName }}
+            </div>
+            <div 
+              *ngFor="let question of section.questions" 
+              style="margin-bottom: 4px; display: flex; align-items: center; justify-content: space-between; cursor: pointer;"
+              (click)="goToQuestion(question._id, question.pageIndex, question.sectionIndex); $event.stopPropagation()"
+            >
+              <span
+                style="
+                  color: #0066cc;
+                  text-decoration: none;
+                  cursor: pointer;
+                  flex: 1;
+                "
+                (mouseenter)="$any($event.currentTarget).style.textDecoration = 'underline'"
+                (mouseleave)="$any($event.currentTarget).style.textDecoration = 'none'"
+              >
+                {{ getFilteredQuestion(question) }}
+              </span>
+              <mat-icon style="font-size: 16px; width: 16px; height: 16px; color: #808080; margin-left: 8px;">chevron_right</mat-icon>
             </div>
           </div>
-        </ng-container>
+        </div>
       </div>
-    </div>
-    <div mat-dialog-actions class="d-flex flex-jc-space-around">
-      <button class="btn btn-primary" type="button" (click)="closeModal()">
-        Close
-      </button>
-    </div>
+      <div mat-dialog-actions class="d-flex flex-jc-flex-end" style="padding: 16px;">
+        <button 
+          class="btn btn-primary" 
+          type="button" 
+          (click)="closeModal()"
+          style="background-color: #8B0000; color: white;"
+        >
+          Go Back to Form
+        </button>
+      </div>
+    </ng-container>
+
+    <!-- Question Map UI when showSaveDraftButton is false -->
+    <ng-template #questionMapView>
+      <div
+        mat-dialog-title
+        class="d-flex flex-dr flex-ai-center flex-gap-3 flex-jc-flex-start p-10"
+        style="color: var(--primary-color)"
+      >
+        Question Map
+      </div>
+      <mat-divider></mat-divider>
+      <div mat-dialog-content class="qmap">
+        <div
+          class="d-flex flex-dr flex-w-wrap flex-gap-8"
+          style="margin-bottom: 8px"
+        >
+          <span style="color: #080808"
+            ><span style="color: #a30000; font-size: 48px; vertical-align: bottom"
+              >&#x2022;</span
+            >
+            Required & unanswered</span
+          >
+          <span style="color: #080808"
+            ><span style="color: #006600; font-size: 48px; vertical-align: bottom"
+              >&#x2022;</span
+            >
+            Answered</span
+          >
+          <span style="color: #080808"
+            ><span style="color: #595959; font-size: 48px; vertical-align: bottom"
+              >&#x2022;</span
+            >
+            Optional & unanswered</span
+          >
+        </div>
+        <div *ngFor="let page of questionMap | sortKeys" style="padding: 4px">
+          <ng-container *ngIf="questionMap[page].length">
+            <div class="d-flex" style="color: #080808">
+              <div>
+                <mat-icon style="vertical-align: middle">arrow_right</mat-icon>
+              </div>
+              <div class="d-flex flex-dc">
+                <ng-container *ngIf="!pageMsg.has(page); else pageWithMsg">{{
+                  page
+                }}</ng-container>
+                <ng-template #pageWithMsg>
+                  {{ page + " (" + pageMsg.get(page) + ")" }}
+                </ng-template>
+                <div
+                  class="d-flex flex-dr flex-gap-8 flex-w-wrap"
+                  style="margin: 12px 0"
+                >
+                  <ng-container *ngFor="let question of questionMap[page]">
+                    <button
+                      (click)="
+                        goToQuestion(
+                          question._id,
+                          question.pageIndex,
+                          question.sectionIndex
+                        )
+                      "
+                      mat-mini-fab
+                      [ngStyle]="{
+                        'background-color': question.validity
+                      }"
+                    >
+                      {{ question.questionNumber }}
+                    </button>
+                  </ng-container>
+                </div>
+              </div>
+            </div>
+          </ng-container>
+        </div>
+      </div>
+      <div mat-dialog-actions class="d-flex flex-jc-space-around">
+        <button class="btn btn-primary" type="button" (click)="closeModal()">
+          Close
+        </button>
+      </div>
+    </ng-template>
   </div>
 </ng-template>
 
@@ -112,10 +297,20 @@
   <div class="uploading-content">
     <div class="upload-screen">
       <div class="upload-body">
-        <mat-icon class="cloud-icon">cloud_upload</mat-icon>
+        <mat-progress-spinner
+          class="spinner"
+          [color]="color"
+          [mode]="mode"
+          [strokeWidth]="strokeWidth"
+        />
         <div class="upload-text">
-          <p class="uploading">Uploading</p>
-          <p class="progress">{{ currentFileUploaded }} Of {{totalFileToUpload}} Evidences.</p>
+          <div class="d-flex flex-dr flex-ai-center flex-jc-center flex-gap-10 mt-20 mb-10">
+            <mat-icon class="cloud-icon">cloud_upload</mat-icon>
+            <p class="uploading">Uploading</p>
+          </div>
+          <p class="progress">
+            {{ currentFileUploaded }} Of {{ totalFileToUpload }} Evidences.
+          </p>
           <p class="note">Please don't close the app or go back.</p>
         </div>
       </div>

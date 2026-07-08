@@ -57,9 +57,17 @@ export class MatrixQuestionsComponent implements OnInit {
     this.cancelText = 'Cancel';
     setTimeout(() => {
       this.matrixForm = this.fb.group({},Validators.required);
+      
+      // Check if the matrix question is required
+      const validation = this.question.validation;
+      const isRequired = typeof validation !== 'string' && validation?.required;
+      
+      // Create FormArray with validators only if required
+      const validators = isRequired ? [Validators.required] : [];
+      
       this.questionnaireForm.setControl(
         this.question._id,
-        new FormArray([], [Validators.required])
+        new FormArray([], validators)
       );
       this.initializeMatrix();
     });
@@ -89,6 +97,16 @@ export class MatrixQuestionsComponent implements OnInit {
   }
 
   instanceValidation(control: FormControl) {
+    // Only validate if the matrix question is required
+    const validation = this.question.validation;
+    const isRequired = typeof validation !== 'string' && validation?.required;
+    
+    if (!isRequired) {
+      // If not required, instance can be empty
+      return null;
+    }
+    
+    // If required, check if value is empty
     let value = control.value;
     if (this.utilService.isEmpty(value)) {
       return { err: 'Instance not filled' };
@@ -103,7 +121,14 @@ export class MatrixQuestionsComponent implements OnInit {
       JSON.parse(JSON.stringify(this.question.instanceQuestions))
     );
     this.matrixForm.reset();
-    this.formAsArray.push(new FormControl([], [Validators.required]));
+    
+    // Check if the matrix question is required
+    const validation = this.question.validation;
+    const isRequired = typeof validation !== 'string' && validation?.required;
+    
+    // Add validator only if required
+    const validators = isRequired ? [Validators.required] : [];
+    this.formAsArray.push(new FormControl([], validators));
   }
 
   viewInstance(i): void {
@@ -173,5 +198,114 @@ export class MatrixQuestionsComponent implements OnInit {
 
   closeModal() {
     this.dialog.closeAll();
+  }
+
+  /**
+   * Get the first 5 filled fields from an instance
+   * @param instanceIndex The index of the instance
+   * @returns Array of objects with question label and value
+   */
+  getInstancePreviewData(instanceIndex: number): { label: string; value: any }[] {
+    if (!this.question.value || !this.question.value[instanceIndex]) {
+      return [];
+    }
+
+    const instance = this.question.value[instanceIndex];
+    const filledFields: { label: string; value: any }[] = [];
+
+    for (const ques of instance) {
+      if (ques.value !== null && ques.value !== undefined && ques.value !== '') {
+        // Get the label from various possible sources
+        let label = 'Field';
+        
+        if (ques.question) {
+          // Handle case where question is an array (most common)
+          if (Array.isArray(ques.question) && ques.question.length > 0) {
+            label = ques.question[0];
+          } else if (typeof ques.question === 'string') {
+            label = ques.question;
+          }
+        } else if (ques.label) {
+          label = ques.label;
+        } else if (ques.text) {
+          label = ques.text;
+        }
+        
+        filledFields.push({
+          label: label,
+          value: this.formatValue(ques.value, ques.responseType, ques.options)
+        });
+      }
+      
+      // Stop after getting 5 fields
+      if (filledFields.length >= 5) {
+        break;
+      }
+    }
+
+    return filledFields;
+  }
+
+  /**
+   * Check if instance has more than 5 filled fields
+   * @param instanceIndex The index of the instance
+   * @returns True if there are more than 5 filled fields
+   */
+  hasMoreFields(instanceIndex: number): boolean {
+    if (!this.question.value || !this.question.value[instanceIndex]) {
+      return false;
+    }
+
+    const instance = this.question.value[instanceIndex];
+    let filledCount = 0;
+
+    for (const ques of instance) {
+      if (ques.value !== null && ques.value !== undefined && ques.value !== '') {
+        filledCount++;
+      }
+      
+      if (filledCount > 5) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  /**
+   * Format the value for display
+   * @param value The value to format
+   * @param responseType The response type of the question (radio, multiselect, etc.)
+   * @param options The options array for radio/multiselect questions
+   * @returns Formatted string
+   */
+  private formatValue(value: any, responseType?: string, options?: any[]): string {
+    // Handle radio and multiselect - map value(s) to label(s)
+    if ((responseType === 'radio' || responseType === 'multiselect') && options && Array.isArray(options)) {
+      if (Array.isArray(value)) {
+        // Multiselect - array of values
+        const labels = value.map(val => {
+          const option = options.find(opt => opt.value === val);
+          return option ? option.label : val;
+        });
+        return labels.join(', ');
+      } else {
+        // Radio - single value
+        const option = options.find(opt => opt.value === value);
+        return option ? option.label : String(value);
+      }
+    }
+    
+    // Handle other array values
+    if (Array.isArray(value)) {
+      return value.join(', ');
+    }
+    
+    // Handle objects
+    if (typeof value === 'object') {
+      return JSON.stringify(value);
+    }
+    
+    return String(value);
   }
 }

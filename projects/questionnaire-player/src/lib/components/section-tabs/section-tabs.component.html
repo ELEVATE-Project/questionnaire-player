@@ -1,0 +1,55 @@
+<ng-container *ngIf="sections?.length > 1; else singleSection">
+  <mat-tab-group
+    [(selectedIndex)]="sectionIndex"
+    (selectedTabChange)="onTabChange($event)"
+    class="section-tabs"
+  >
+    <mat-tab
+      *ngFor="let section of sections; let secId = index"
+    >
+      <ng-template mat-tab-label>
+        <mat-icon *ngIf="section.icon">{{ section.icon }}</mat-icon>
+        {{ section.name }}
+      </ng-template>
+      <span [id]="section.name" *ngIf="section.name">
+        <lib-cards-questions
+          #mainComponent
+          [questions]="section.questions"
+          [questionnaireForm]="questionnaireForm"
+          [isSubmitted]="isSubmitted"
+          [isExpired]="isExpired"
+          [fileSizeLimit]="fileSizeLimit"
+          [apiConfig]="apiConfig"
+        ></lib-cards-questions>
+      </span>
+    </mat-tab>
+  </mat-tab-group>
+</ng-container>
+
+<ng-template #singleSection>
+  <span [id]="sections?.[0]?.name" *ngIf="sections?.[0]?.name">
+    <lib-page-questions-grid
+    #pageQuestionsGrid
+    [pageQuestions]="sections?.[0]?.questions"
+    [questionnaireForm]="questionnaireForm"
+    [fileUploadResponse]="fileUploadResponse"
+    [fileSizeLimit]="fileSizeLimit"
+    [isSubmitted]="isSubmitted"
+    [isExpired]="isExpired"
+    [apiConfig]="apiConfig"
+    *ngIf="apiConfig?.usePageQuestionsGrid === true"
+  ></lib-page-questions-grid>
+
+    <lib-main
+      #mainComponent
+      [questions]="sections?.[0]?.questions"
+      [questionnaireForm]="questionnaireForm"
+      [isSubmitted]="isSubmitted"
+      [isExpired]="isExpired"
+      [fileSizeLimit]="fileSizeLimit"
+      [apiConfig]="apiConfig"
+      *ngIf="apiConfig?.usePageQuestionsGrid === false"
+    ></lib-main>
+  </span>
+</ng-template>
+

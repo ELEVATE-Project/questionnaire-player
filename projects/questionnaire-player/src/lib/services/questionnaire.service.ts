@@ -3,6 +3,7 @@ import { ValidatorFn, AbstractControl } from '@angular/forms';
 import {
   Question,
   ResponseType,
+  DisplayType,
   Evidence,
 } from '../interfaces/questionnaire.type';
 
@@ -18,31 +19,115 @@ export class QuestionnaireService {
       if (typeof data.validation == 'string') {
         return null;
       }
-      if (!data.validation.required) {
-        return null;
+      
+      // Validate phone number length (min: 10, max: 10) - check even if not required
+      if (data.responseType === ResponseType.TEXT && 
+          data.validation.IsNumber === 'true' &&
+          data.validation.min !== undefined && data.validation.max !== undefined &&
+          Number(data.validation.min) === 10 && Number(data.validation.max) === 10) {
+        const phoneValue = String(control.value || '');
+        if (phoneValue.length > 0 && phoneValue.length !== 10) {
+          return { err: 'Phone number must be exactly 10 digits' };
+        }
       }
+
       if (data.validation.regex) {
         const forbidden = this.testRegex(data.validation.regex, control.value || '');
         return forbidden ? null : { err: 'Invalid character found' };
       }
 
-      if (data.validation.IsNumber) {
-        if (!control.value) {
-          return { err: 'Number not entered' };
+      // Validate minLength and maxLength for TEXT input fields
+      if (data.responseType === ResponseType.TEXT && control.value !== null && control.value !== undefined && control.value !== '') {
+        const textValue = String(control.value);
+        
+        // Check minLength
+        if (data.validation.minLength !== undefined && data.validation.minLength !== null && data.validation.minLength !== '') {
+          const minLength = typeof data.validation.minLength === 'string' ? parseInt(data.validation.minLength, 10) : data.validation.minLength;
+          if (textValue.length < minLength) {
+            return { err: `Minimum ${minLength} characters required` };
+          }
         }
-        const forbidden = !isNaN(control.value);
-        return forbidden ? null : { err: 'Only numbers allowed' };
+        
+        // Check maxLength
+        if (data.validation.maxLength !== undefined && data.validation.maxLength !== null && data.validation.maxLength !== '') {
+          const maxLength = typeof data.validation.maxLength === 'string' ? parseInt(data.validation.maxLength, 10) : data.validation.maxLength;
+          if (textValue.length > maxLength) {
+            return { err: `Maximum ${maxLength} characters allowed` };
+          }
+        }
+      }
+
+      if (data.validation.IsNumber) {
+        // Validate that value is a number if provided (including 0)
+        // Check if value exists (0 is a valid value, so we check for null, undefined, or empty string)
+        if (control.value !== null && control.value !== undefined && control.value !== '') {
+          const isNumber = !isNaN(control.value);
+          if (!isNumber) {
+            return { err: 'Only numbers allowed' };
+          }
+          
+          // Validate number min/max values for number input fields
+          if (data.responseType === ResponseType.NUMBER) {
+            // Check min value
+            if (data.validation.min !== undefined && data.validation.min !== null && data.validation.min !== '') {
+              const minValue = typeof data.validation.min === 'string' ? parseFloat(data.validation.min) : data.validation.min;
+              if (Number(control.value) < minValue) {
+                return { err: `Minimum value is ${minValue}` };
+              }
+            }
+            
+            // Check max value
+            if (data.validation.max !== undefined && data.validation.max !== null && data.validation.max !== '') {
+              const maxValue = typeof data.validation.max === 'string' ? parseFloat(data.validation.max) : data.validation.max;
+              if (Number(control.value) > maxValue) {
+                return { err: `Maximum value is ${maxValue}` };
+              }
+            }
+            
+            // Check minLength (minimum number of digits)
+            if (data.validation.minLength !== undefined && data.validation.minLength !== null && data.validation.minLength !== '') {
+              const minLength = typeof data.validation.minLength === 'string' ? parseInt(data.validation.minLength, 10) : data.validation.minLength;
+              const valueStr = String(control.value).replace(/[.-]/g, ''); // Remove minus and decimal
+              if (valueStr.length < minLength) {
+                return { err: `Minimum ${minLength} digits required` };
+              }
+            }
+            
+            // Check maxLength (maximum number of digits)
+            if (data.validation.maxLength !== undefined && data.validation.maxLength !== null && data.validation.maxLength !== '') {
+              const maxLength = typeof data.validation.maxLength === 'string' ? parseInt(data.validation.maxLength, 10) : data.validation.maxLength;
+              const valueStr = String(control.value).replace(/[.-]/g, ''); // Remove minus and decimal
+              if (valueStr.length > maxLength) {
+                return { err: `Maximum ${maxLength} digits allowed` };
+              }
+            }
+          }
+        }
       }
 
       if (data.validation.required) {
-        if (!control.value) {
-          return { err: 'Required field' };
+        // Check for empty arrays (FormArray case)
+        if (Array.isArray(control.value)) {
+          if (data.responseType == ResponseType.MULTISELECT) {
+            return control.value.some((v) => v != '')
+              ? null
+              : { err: 'Select at least one option' };
+          }
+          if ((data.displayType == DisplayType.ENTITY_DROPDOWN || (data.responseType as string) == 'entity-dropdown') && data.entityConfig?.multiSelect) {
+            // Entity dropdown with multi-select uses FormArray
+            return control.value.some((v) => v != '' && v != null && v != undefined)
+              ? null
+              : { err: 'Select at least one option' };
+          }
+          // Empty array for other types
+          if (control.value.length === 0) {
+            return { err: 'Required field' };
+          }
         }
-
-        if (data.responseType == ResponseType.MULTISELECT) {
-          return control.value.some((v) => v != '')
-            ? null
-            : { err: 'Select at least one option' };
+        
+        // Check for required field - handle 0 as valid value
+        if (control.value === null || control.value === undefined || control.value === '') {
+          return { err: 'Required field' };
         }
 
         if (data.responseType == ResponseType.SLIDER) {
@@ -69,6 +154,38 @@ export class QuestionnaireService {
     return this._submissionId;
   }
 
+  /**
+   * Single source of truth for deciding whether fresh mockData should replace
+   * the locally-stored offline copy.
+   *
+   * The component calls this once per load; all future business rules
+   * (status, version, deleted flag, schema version, etc.) belong here so the
+   * component itself never needs to change.
+   *
+   * @param mockSubmission    submission metadata from the latest incoming mockData
+   * @param offlineSubmission submission metadata retrieved from the local offline store
+   * @returns true  → discard offline copy, render mockData
+   *          false → keep offline copy as-is
+   */
+  shouldUseMockData(mockSubmission: any, offlineSubmission: any): boolean {
+    // No offline copy exists — nothing to compare, always use fresh mockData
+    if (!offlineSubmission) return true;
+
+    // mockData carries no submission metadata — cannot assess freshness, keep offline
+    if (!mockSubmission) return false;
+
+    const mockUpdatedAt: string | undefined = mockSubmission?.updatedAt;
+    const offlineUpdatedAt: string | undefined = offlineSubmission?.updatedAt;
+
+    // mockData has no timestamp — cannot compare, preserve offline copy
+    if (!mockUpdatedAt) return false;
+
+    // Offline copy has no timestamp — mockData wins by default
+    if (!offlineUpdatedAt) return true;
+
+    return new Date(mockUpdatedAt).getTime() > new Date(offlineUpdatedAt).getTime();
+  }
+
   mapSubmissionToAssessment(data) {
     const assessment = data.assessment;
 
@@ -84,23 +201,28 @@ export class QuestionnaireService {
           for (const question of section.questions) {
             if (question.responseType === 'pageQuestions') {
               for (const questions of question.pageQuestions) {
-                questions.value =
-                  questions.responseType !== 'matrix'
-                    ? validSubmission.answers[questions._id].value
-                    : this.constructMatrixValue(
-                        validSubmission,
-                        questions,
-                        evidence?.externalId
-                      );
-                questions.remarks = validSubmission.answers[questions._id]
-                  ? validSubmission.answers[questions._id].remarks
-                  : '';
-                questions.fileName = validSubmission.answers[questions._id]
-                  ? validSubmission.answers[questions._id].fileName
-                  : [];
-                questions.endTime = validSubmission.answers[questions._id]
-                  ? validSubmission.answers[questions._id].endTime
-                  : '';
+                if (
+                  validSubmission.answers &&
+                  validSubmission.answers[questions._id]
+                ) {
+                  questions.value =
+                    questions.responseType !== 'matrix'
+                      ? validSubmission.answers[questions._id].value
+                      : this.constructMatrixValue(
+                          validSubmission,
+                          questions,
+                          evidence?.externalId
+                        );
+                  questions.remarks = validSubmission.answers[questions._id]
+                    ? validSubmission.answers[questions._id].remarks
+                    : '';
+                  questions.fileName = validSubmission.answers[questions._id]
+                    ? validSubmission.answers[questions._id].fileName
+                    : [];
+                  questions.endTime = validSubmission.answers[questions._id]
+                    ? validSubmission.answers[questions._id].endTime
+                    : '';
+                }
               }
             } else if (
               validSubmission.answers &&
@@ -179,8 +301,18 @@ export class QuestionnaireService {
   }
 
   getEvidenceData(evidence: Evidence, formValues: object) {
-    let sections = evidence?.sections;
+    // Validate evidence parameter
+    if (!evidence) {
+      return {
+        externalId: null,
+        answers: {},
+        startTime: null,
+        endTime: Date.now(),
+        isSubmitted: false
+      };
+    }
     
+    let sections = evidence?.sections;
     let answers = this.getSectionData(sections, formValues);
     let payloadData = {
       externalId: evidence?.externalId,
@@ -194,17 +326,27 @@ export class QuestionnaireService {
 
   getSectionData(sections, formValues) {
     let answers = {};
+    // Validate sections parameter
+    if (!sections || !Array.isArray(sections) || sections.length === 0) {
+      return answers;
+    }
     for (let index = 0; index < sections.length; index++) {
-      answers = {
-        ...answers,
-        ...this.createpayload(sections[index].questions, formValues),
-      };
+      if (sections[index] && sections[index].questions) {
+        answers = {
+          ...answers,
+          ...this.createpayload(sections[index].questions, formValues),
+        };
+      }
     }
     return answers;
   }
 
   createpayload(questions, formValues) {
     let answers = {};
+    // Validate questions parameter
+    if (!questions || !Array.isArray(questions) || questions.length === 0) {
+      return answers;
+    }
     for (let index = 0; index < questions.length; index++) {
       let currentQuestion = questions[index];
       if (currentQuestion.responseType == 'pageQuestions') {

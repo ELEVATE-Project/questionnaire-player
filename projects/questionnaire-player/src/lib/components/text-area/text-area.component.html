@@ -8,9 +8,11 @@
     class="text-area-sizing"
     matInput
     [formControlName]="question._id"
-    [placeholder]="placeholder"
+    [placeholder]="question.placeHolder || placeholder"
     (change)="onChange($event)"
     [value]="question.value"
+    cdkTextareaAutosize
+    cdkAutosizeMinRows="3"
   ></textarea>
 </mat-form-field>
 <mat-error *ngIf="questionnaireForm?.contains(question._id) && isTouched && !isValid">{{ getValidationMessage(question._id) }}</mat-error>

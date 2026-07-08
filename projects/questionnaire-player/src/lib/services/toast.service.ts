@@ -13,11 +13,11 @@ export class ToastService {
     let styleClass = type ? type : "default"
     let snackBarConfig = {
       duration: duration ? duration : 3000,
-      verticalPosition: verticalPosition ? verticalPosition : 'top',
+      verticalPosition: verticalPosition ? verticalPosition : 'bottom',
       horizontalPosition: horizontalPosition ? horizontalPosition : "center",
-      panelClass: [styleClass]
+      panelClass: [styleClass, 'custom-toast']
     }
-    this.snackBar.open(message,'',snackBarConfig)
+    this.snackBar.open(message,'',snackBarConfig);
   }
 
   async showNetworkToast(message: string,type?:string,duration?:number,verticalPosition?:any,horizontalPosition?:any) {
@@ -29,11 +29,11 @@ export class ToastService {
     let styleClass = type ? type : "default"
     let snackBarConfig = {
       duration: duration ? duration : 3000,
-      verticalPosition: verticalPosition ? verticalPosition : 'top',
+      verticalPosition: verticalPosition ? verticalPosition : 'bottom',
       horizontalPosition: horizontalPosition ? horizontalPosition : "center",
-      panelClass: [styleClass]
+      panelClass: [styleClass, 'custom-toast']
     }
-    this.snackBar.open(message,'',snackBarConfig)
+    this.snackBar.open(message,'',snackBarConfig);
   }
 
   clearToaster(){

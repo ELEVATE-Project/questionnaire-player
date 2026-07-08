@@ -8,7 +8,9 @@
     class="text-area-sizing"
     matInput
     [formControlName]="question._id"
-    [placeholder]="placeholder"
+    [placeholder]="question.placeHolder || placeholder"
+    [attr.minlength]="minLength"
+    [attr.maxlength]="maxLength"
     (change)="onChange($event)"
     [value]="question.value"
   />

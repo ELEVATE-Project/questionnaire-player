@@ -79,11 +79,15 @@ export interface Section {
   code: string;
   questions: Question[];
   name: string;
+  icon?: string;
 }
 
 export interface Question {
   _id: string;
+  placeHolder: string;
+  icon?: string;
   question: string;
+  sectionDescription: string;
   isCompleted: boolean;
   showRemarks: string;
   options: any;
@@ -114,6 +118,7 @@ export interface Question {
   tip: string;
   hint: string;
   responseType: ResponseType;
+  displayType?: DisplayType; // Optional display type that overrides responseType for rendering
   modeOfCollection: string;
   accessibility: string;
   rubricLevel: string;
@@ -131,6 +136,9 @@ export interface Question {
   gpsLocation: string;
   file: string;
   pageQuestions: Question[];
+  // Entity dropdown configuration
+  entityConfig?: EntityConfig;
+  readonly?: boolean; // If true, the question input is readonly
 }
 
 type Omit<T, K extends keyof T> = Pick<T, Exclude<keyof T, K>>;
@@ -157,7 +165,14 @@ export enum ResponseType {
   SLIDER = 'slider',
   PAGEQUESTIONS = 'pageQuestions',
   MATRIX = 'matrix',
-  TEXTAREA='textDescription'
+  TEXTAREA='textDescription',
+}
+
+export enum DisplayType {
+  FILE_UPLOAD = 'fileUpload',
+  ENTITY_DROPDOWN = 'entity-dropdown',
+  SELECT_DROPDOWN = 'select-dropdown',
+  MULTISELECT_DROPDOWN = 'multiselect-dropdown',
 }
 
 export type FileUnion = FileClass | string;
@@ -179,8 +194,10 @@ export interface Payload {
 
 export interface Validation {
   required: boolean;
-  max?: string;
-  min?: string;
+  max?: string | number;
+  min?: string | number;
+  maxLength?: string | number;
+  minLength?: string | number;
   IsNumber?: string;
   regex: RegExp;
 }
@@ -204,7 +221,22 @@ export interface ImageCompression {
   quality: number;
 }
 
-export interface ApiConfiguration{
+export interface EntityConfig {
+  entityType?: string;
+  api?: string;
+  labelKey?: string;
+  valueKey?: string;
+  searchEnabled?: boolean;
+  paginationEnabled?: boolean;
+  multiSelect?: boolean;
+}
+
+export interface DefaultValueConfig {
+  value: string | string[] | number;
+  readonly: boolean;
+}
+
+export interface ApiConfiguration {
   profileData?: any;
   baseURL:string;
   userAuthToken:string;
@@ -217,7 +249,30 @@ export interface ApiConfiguration{
   submissionNumber:string;
   evidenceCode:string;
   index:any;
-  stateData:any
+  stateData:any;
+  mockData?: any;
+  defaultValues?: { [questionId: string]: DefaultValueConfig }; // Map of question IDs to default values and readonly state
+  usePageQuestionsGrid?: boolean; // If true, use lib-page-questions-grid for pageQuestions, otherwise use lib-main
+  enablePagination?: boolean; // If false, display all page groups as cards instead of paginating
+  gridCount?: number; // If provided, use grid layout with specified number of columns
+  labelInputHorizontalLayout?: boolean; // If true, display label and input side by side horizontally
+  showSaveDraftButton?: boolean; // If true, show the save draft button, otherwise hide it
+  /** If true, show a "Next tab" control when there are multiple sections; disabled on the last section */
+  showNextTabButton?: boolean;
+  showToast?: boolean; // If false, disable toast notifications (default: true)
+  progressCalculationLevel?: 'page' | 'input'; // 'page' calculates progress when all questions on a page are complete, 'input' calculates progress for each individual input/field
+  progressCountOptionalFields?: boolean; // If true, optional fields are also counted in progress calculation (default: true for input level, false for page level)
+  showPrivacyPopup?: boolean; // If false, skip the privacy policy popup when uploading files (default: true)
+  saveProgressStorageType?: "device" | "server"; // If "device", save progress to device storage, otherwise save to server storage
+  dynamicEntityTyperequireDynamicAnswers?: {
+    lableMapping?: {
+      [key: string]: {
+        [key: string]: string;
+      };
+    };
+  };
+  /** When true, all server API calls are disabled. Form data is sent to the parent via postMessage instead. */
+  offline?: boolean;
 }
 
 

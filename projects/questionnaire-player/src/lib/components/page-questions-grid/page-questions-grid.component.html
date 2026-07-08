@@ -1,0 +1,35 @@
+<div class="custom-font">
+  <ng-container *ngIf="pageQuestions && pageQuestions.length > 0">
+    <ng-container *ngFor="
+        let question of pageQuestions;
+        let pageIndex = index;
+        trackBy: questionTrackBy
+      ">
+    <div
+      [id]="'page-group-' + pageIndex"
+      class="page-group-container"
+    >
+      <div class="d-flex pt-24 px-24 flex-ai-start flex-gap-10">
+        <mat-icon class="primary-color">{{ question?.icon ?? "edit_note" }}</mat-icon>
+        <div class="d-flex flex-gap-10 flex-dc">
+          <h3 class="page-header primary-color">{{question.question}}</h3>
+          <h6 class="page-subHeader m-0" *ngIf="question.sectionDescription !== question.question">{{question.sectionDescription}}</h6>
+        </div>
+      </div>
+      <div class="questions-grid">
+        <lib-main
+          [questions]="question.pageQuestions"
+          [questionnaireForm]="questionnaireForm"
+          [fileUploadResponse]="fileUploadResponse"
+          [questionnaireInstance]="true"
+          [fileSizeLimit]="fileSizeLimit"
+          [isSubmitted]="isSubmitted"
+          [isExpired]="isExpired"
+          [apiConfig]="getSafeApiConfig(question)"
+        ></lib-main>
+      </div>
+    </div>
+    </ng-container>
+  </ng-container>
+</div>
+
