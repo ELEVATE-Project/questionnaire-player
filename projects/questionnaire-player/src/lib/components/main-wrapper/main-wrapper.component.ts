@@ -199,7 +199,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
     const payload = this.buildOfflinePayload(submissionData);
 
     if (!isSubmit) {
-      console.log('[Offline] Sending QUESTIONNAIRE_SAVE — status: DRAFT',payload, submissionData);
+      console.log('[Offline] Sending QUESTIONNAIRE_SAVE — status: DRAFT',payload);
       this.sendMessage({
         type: 'QUESTIONNAIRE_SAVE',
         status: 'DRAFT',
@@ -1262,7 +1262,7 @@ export class MainWrapperComponent implements OnInit, OnChanges, OnDestroy {
         }
       }
       
-      await this.handleOfflineSubmission(submissionData);
+      await this.handleOfflineSubmission({...submissionData, files: uploadQueue});
       this.buttonLoading = false;
       return;
     }
